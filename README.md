@@ -9,7 +9,7 @@ The service is built upon four distinct phases:
 
 ### Phase 1: The Data Engine (Gathering)
 Responsible for ingesting raw data from multiple sources.
-- **Market Data:** Real-time ticks and historical candles via OANDA v20 API or MetaTrader 5 (MT5).
+- **Market Data:** Real-time ticks and historical candles via PuPrime (MetaTrader 5).
 - **News Events:** Scraping high-impact economic events (e.g., CPI, Interest Rates) from economic calendars using BeautifulSoup or Selenium.
 
 ### Phase 2: The Analysis Layer (The Brain)
@@ -33,11 +33,12 @@ Ensures continuous operation and data persistence.
 
 ## Tech Stack
 - **Language:** Python
+- **Backend Framework:** FastAPI
 - **Data Manipulation:** Pandas, NumPy
 - **Visualization:** Matplotlib, Plotly
 - **Machine Learning:** Scikit-Learn, TensorFlow/PyTorch (LSTMs)
 - **Scraping:** BeautifulSoup, Selenium/Playwright
-- **APIs:** OANDA, MetaTrader 5, yfinance
+- **APIs:** MetaTrader 5 (requires Windows), yfinance
 
 ## Roadmap
 

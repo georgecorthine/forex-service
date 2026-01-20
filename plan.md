@@ -127,8 +127,9 @@ Before coding, we need a clear flow of how data becomes an actionable signal.
 
 You need two types of data: **Price Data** (Quantitative) and **News Data** (Qualitative).
 
-* **Market Data (OHLCV):** For Forex, I recommend the **OANDA v20 API** or **MetaTrader 5 (MT5) Python integration**. They provide high-fidelity, real-time "ticks" and historical candles.
-* *Library:* `tpqoa` (for OANDA) or `MetaTrader5`.
+* **Market Data (OHLCV):** Using **OANDA API** for analysis (Mac-compatible).
+* *Execution:* Manual entry on **PuPrime (MT5)** based on signals.
+* *Library:* `httpx` (for OANDA REST API).
 
 
 * **The Scraper (News Events):** You’ll want to scrape economic calendars (like ForexFactory or Investing.com) for "High Impact" events like CPI or Interest Rate decisions.
