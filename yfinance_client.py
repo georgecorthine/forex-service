@@ -41,3 +41,22 @@ class YFinanceClient:
         except Exception as e:
             logger.error(f"YFinance Error for {symbol}: {e}")
             return None
+
+    async def get_history(self, instrument: str, period: str = "1d", interval: str = "5m"):
+        """
+        Fetches historical OHLC data for the instrument.
+        Default: Last 1 day of 5-minute candles.
+        """
+        loop = asyncio.get_running_loop()
+        symbol = instrument.replace("_", "") + "=X"
+        
+        def fetch_data():
+            ticker = yf.Ticker(symbol)
+            # Fetch history (returns a Pandas DataFrame)
+            return ticker.history(period=period, interval=interval)
+
+        try:
+            return await loop.run_in_executor(None, fetch_data)
+        except Exception as e:
+            logger.error(f"YFinance History Error for {symbol}: {e}")
+            return None

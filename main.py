@@ -4,6 +4,8 @@ import asyncio
 import logging
 import os
 from yfinance_client import YFinanceClient
+from indicators import calculate_rsi
+from config import TRADING_PAIRS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -27,17 +29,36 @@ async def trading_engine_loop():
     logger.info("Trading Engine started.")
     while state["running"]:
         try:
-            # --- Phase 1: Data Collection ---
-            price_data = await yfinance_client.get_current_price("EUR_USD")
-            
-            if price_data:
-                logger.info(f"Market Data: {price_data}")
-                # Update global state so we can see it at http://localhost:8000/
-                state["latest_signal"] = {"current_price": price_data}
+            for instrument, config in TRADING_PAIRS.items():
+                # --- Phase 1: Data Collection ---
+                # Fetch the last day of 5-minute candles to ensure we have enough data for RSI
+                history = await yfinance_client.get_history(instrument, period="1d", interval="5m")
+                
+                if history is not None and not history.empty:
+                    # Get the latest close price
+                    current_price = history["Close"].iloc[-1]
+                    
+                    # --- Phase 2: Analysis ---
+                    # Use the specific RSI length from our config
+                    rsi = calculate_rsi(history, length=config["rsi_length"])
+                    
+                    # Interpret the RSI value using config thresholds
+                    sentiment = "Neutral"
+                    if rsi > config["overbought"]:
+                        sentiment = "Overbought (Potential SELL)"
+                    elif rsi < config["oversold"]:
+                        sentiment = "Oversold (Potential BUY)"
+                    
+                    logger.info(f"Analysis [{instrument}]: Price={current_price:.5f} | RSI={rsi:.2f} | Sentiment={sentiment}")
+                    
+                    # Update global state so we can see it at http://localhost:8000/
+                    state["latest_signal"][instrument] = {
+                        "price": current_price,
+                        "rsi": rsi,
+                        "sentiment": sentiment,
+                        "timestamp": str(history.index[-1])
+                    }
 
-            # --- Phase 2: Analysis (Placeholder) ---
-            # signal = strategy.analyze(prices, news)
-            
             # --- Phase 3: Storage/Alerts (Placeholder) ---
             # if signal:
             #     await telegram_bot.send(signal)
