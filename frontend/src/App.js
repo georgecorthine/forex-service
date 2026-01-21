@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
+import TradeChart from './components/TradeChart';
 
 const API_URL = 'http://localhost:8000';
 
@@ -7,7 +8,10 @@ function App() {
   const [status, setStatus] = useState({ service: 'offline', engine_running: false });
   const [logs, setLogs] = useState([]);
   const [pairs, setPairs] = useState([]);
+  const [trades, setTrades] = useState([]);
   const [selectedPair, setSelectedPair] = useState('ALL');
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true); // New state to control auto-scrolling
+  const logContainerRef = useRef(null); // Ref for the log container div
   const logsEndRef = useRef(null);
 
   useEffect(() => {
@@ -27,17 +31,63 @@ function App() {
       // Fetch Logs
       fetch(`${API_URL}/logs`)
         .then(res => res.json())
-        .then(data => setLogs(data.logs))
+        .then(data => setLogs(data.logs || []))
         .catch(err => console.error("Failed to fetch logs", err));
     }, 2000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll to bottom of logs
+  // Parse logs for trade data
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    let analysisLogs = logs.filter(log => log.includes('Analysis ['));
+
+    // If a specific pair is selected (and not 'ALL'), filter for that pair.
+    if (selectedPair !== 'ALL') {
+      analysisLogs = analysisLogs.filter(log => log.includes(selectedPair));
+    } else if (analysisLogs.length > 0) {
+      // If 'ALL' is selected, default to showing the first pair found in the logs to avoid mixing data.
+      const firstPairMatch = analysisLogs[0].match(/\[(.*?)\]/);
+      if (firstPairMatch && firstPairMatch[1]) {
+        const firstPair = firstPairMatch[1];
+        analysisLogs = analysisLogs.filter(log => log.includes(firstPair));
+      }
+    }
+    
+    const parsedTrades = analysisLogs.map((log, index) => {
+      const priceMatch = log.match(/Price=([\d.]+)/);
+      const timeMatch = log.match(/(\d{2}:\d{2}:\d{2})/); // Try to find a time string
+
+      if (priceMatch && priceMatch[1]) {
+        return {
+          date: timeMatch ? timeMatch[1] : index, // Use time or index as x-axis
+          price: parseFloat(priceMatch[1])
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
+    setTrades(parsedTrades);
   }, [logs, selectedPair]);
+
+  // Auto-scroll to bottom of logs if shouldAutoScroll is true
+  useEffect(() => {
+    if (shouldAutoScroll) {
+      logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [logs, selectedPair, shouldAutoScroll]); // Add shouldAutoScroll to dependencies
+
+  // Handle user scrolling to disable/enable auto-scroll
+  const handleScroll = () => {
+    const { scrollTop, scrollHeight, clientHeight } = logContainerRef.current;
+    // If the user has scrolled to the very bottom, re-enable auto-scroll
+    // Add a small buffer (e.g., 1px) to account for potential sub-pixel rendering differences
+    if (scrollHeight - scrollTop <= clientHeight + 1) {
+      setShouldAutoScroll(true);
+    } else {
+      setShouldAutoScroll(false);
+    }
+  };
 
   const toggleEngine = () => {
     const endpoint = status.engine_running ? '/control/stop' : '/control/start';
@@ -76,7 +126,11 @@ function App() {
         </div>
       </div>
 
-      <div className="log-container">
+      <div className="chart-container" style={{ marginBottom: '20px' }}>
+        <TradeChart data={trades} />
+      </div>
+
+      <div className="log-container" ref={logContainerRef} onScroll={handleScroll}>
         {filteredLogs.map((log, index) => (
             <div key={index} className="log-entry">{log}</div>
         ))}
