@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
 import logging
@@ -15,8 +16,23 @@ logger = logging.getLogger("forex_service")
 state = {
     "running": False,
     "latest_signal": {},
-    "errors": []
+    "errors": [],
+    "logs": []
 }
+
+# Custom Handler to capture logs for the browser
+class ListLogHandler(logging.Handler):
+    def emit(self, record):
+        log_entry = self.format(record)
+        state["logs"].append(log_entry)
+        # Keep only last 100 lines to prevent memory issues
+        if len(state["logs"]) > 100:
+            state["logs"].pop(0)
+
+# Attach the handler to our logger
+memory_handler = ListLogHandler()
+memory_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+logger.addHandler(memory_handler)
 
 # Initialize Yahoo Finance Client (No credentials needed)
 yfinance_client = YFinanceClient()
@@ -97,6 +113,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins (for development)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/")
 async def status():
     """Check the health and status of the service."""
@@ -105,6 +129,16 @@ async def status():
         "engine_running": state["running"],
         "latest_signal": state["latest_signal"]
     }
+
+@app.get("/logs")
+async def get_logs():
+    """Return the recent logs."""
+    return {"logs": state["logs"]}
+    
+@app.get("/pairs")
+async def get_pairs():
+    """Return the list of configured trading pairs."""
+    return list(TRADING_PAIRS.keys())
 
 @app.post("/control/stop")
 async def stop_engine():
