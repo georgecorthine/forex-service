@@ -72,8 +72,8 @@ function App() {
 
   // Auto-scroll to bottom of logs if shouldAutoScroll is true
   useEffect(() => {
-    if (shouldAutoScroll) {
-      logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (shouldAutoScroll && logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
     }
   }, [logs, selectedPair, shouldAutoScroll]); // Add shouldAutoScroll to dependencies
 
