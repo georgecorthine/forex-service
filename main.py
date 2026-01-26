@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import asyncio
 import logging
 import os
+from fastapi.staticfiles import StaticFiles
 from yfinance_client import YFinanceClient
 from indicators import calculate_rsi
 from config import TRADING_PAIRS
@@ -121,7 +122,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
+@app.get("/api/")
 async def status():
     """Check the health and status of the service."""
     return {
@@ -130,23 +131,23 @@ async def status():
         "latest_signal": state["latest_signal"]
     }
 
-@app.get("/logs")
+@app.get("/api/logs")
 async def get_logs():
     """Return the recent logs."""
     return {"logs": state["logs"]}
     
-@app.get("/pairs")
+@app.get("/api/pairs")
 async def get_pairs():
     """Return the list of configured trading pairs."""
     return list(TRADING_PAIRS.keys())
 
-@app.post("/control/stop")
+@app.post("/api/control/stop")
 async def stop_engine():
     """Manually stop the analysis loop."""
     state["running"] = False
     return {"message": "Stopping engine..."}
 
-@app.post("/control/start")
+@app.post("/api/control/start")
 async def start_engine():
     """Manually restart the analysis loop if stopped."""
     if not state["running"]:
@@ -154,3 +155,6 @@ async def start_engine():
         asyncio.create_task(trading_engine_loop())
         return {"message": "Engine started."}
     return {"message": "Engine is already running."}
+
+# This must be the last thing added to the app. It serves the React frontend.
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

@@ -16,20 +16,20 @@ function App() {
 
   useEffect(() => {
     // Fetch available pairs configuration
-    fetch(`${API_URL}/pairs`)
+    fetch(`${API_URL}/api/pairs`)
       .then(res => res.json())
       .then(data => setPairs(data))
       .catch(err => console.error("Failed to fetch pairs", err));
 
     const interval = setInterval(() => {
       // Fetch Status
-      fetch(`${API_URL}/`)
+      fetch(`${API_URL}/api/`)
         .then(res => res.json())
         .then(data => setStatus(data))
         .catch(err => console.error("Failed to fetch status", err));
 
       // Fetch Logs
-      fetch(`${API_URL}/logs`)
+      fetch(`${API_URL}/api/logs`)
         .then(res => res.json())
         .then(data => setLogs(data.logs || []))
         .catch(err => console.error("Failed to fetch logs", err));
@@ -90,7 +90,7 @@ function App() {
   };
 
   const toggleEngine = () => {
-    const endpoint = status.engine_running ? '/control/stop' : '/control/start';
+    const endpoint = status.engine_running ? '/api/control/stop' : '/api/control/start';
     fetch(`${API_URL}${endpoint}`, { method: 'POST' })
       .catch(err => console.error("Control error", err));
   };
