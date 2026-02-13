@@ -1,9 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
 import logging
 import os
+import warnings
+from bs4 import XMLParsedAsHTMLWarning
 from yfinance_client import YFinanceClient
 from indicators import calculate_rsi
 from news_scraper import NewsScraper
@@ -12,6 +14,9 @@ from config import TRADING_PAIRS
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("forex_service")
+
+# Suppress XMLParsedAsHTMLWarning from BeautifulSoup when parsing RSS feeds
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 # Global state to track the service status
 state = {
@@ -127,6 +132,31 @@ async def get_pairs():
     """Return the list of configured trading pairs."""
     return list(TRADING_PAIRS.keys())
 
+@app.get("/api/pairs/data")
+async def get_all_pairs_data():
+    """Return the latest analysis for all trading pairs."""
+    return state["latest_signal"]
+
+@app.get("/api/pairs/signals")
+async def get_active_signals():
+    """Return only pairs with active Buy/Sell signals."""
+    return {
+        pair: data
+        for pair, data in state["latest_signal"].items()
+        if "BUY" in data["sentiment"] or "SELL" in data["sentiment"]
+    }
+
+@app.get("/api/pair/{instrument}")
+async def get_pair_data(instrument: str):
+    """Return the latest analysis for a specific trading pair."""
+    if instrument not in TRADING_PAIRS:
+        raise HTTPException(status_code=404, detail=f"Instrument '{instrument}' not found in configuration.")
+    
+    if instrument not in state["latest_signal"]:
+        raise HTTPException(status_code=503, detail=f"Analysis for '{instrument}' is not ready yet.")
+        
+    return state["latest_signal"][instrument]
+
 @app.post("/api/control/stop")
 async def stop_engine():
     """Manually stop the analysis loop."""
@@ -141,3 +171,7 @@ async def start_engine():
         asyncio.create_task(trading_engine_loop())
         return {"message": "Engine started."}
     return {"message": "Engine is already running."}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
