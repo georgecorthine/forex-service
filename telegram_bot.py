@@ -60,6 +60,54 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.error(f"Status check failed: {e}")
             await update.message.reply_text("❌ Error connecting to Forex API.")
 
+async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Fetch detailed analysis for a specific pair."""
+    if not context.args:
+        await update.message.reply_text("⚠️ Usage: /analyze <PAIR>\nExample: /analyze EUR_USD")
+        return
+
+    pair = context.args[0].upper()
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(f"{API_URL}/pair/{pair}", timeout=10.0)
+            
+            if response.status_code == 404:
+                await update.message.reply_text(f"❌ Pair *{pair}* not found.", parse_mode=ParseMode.MARKDOWN)
+                return
+            elif response.status_code == 503:
+                await update.message.reply_text(f"⏳ Data for *{pair}* is not ready yet.", parse_mode=ParseMode.MARKDOWN)
+                return
+            
+            response.raise_for_status()
+            data = response.json()
+
+            sentiment_icon = "⚪"
+            if "BUY" in data['sentiment']: sentiment_icon = "🟢"
+            if "SELL" in data['sentiment']: sentiment_icon = "🔴"
+
+            news_section = ""
+            if data.get('news'):
+                news_section = "\n\n📰 *Recent News:*"
+                for item in data['news'][:3]:
+                    title = item.get('title', 'No Title').replace('[', '(').replace(']', ')')
+                    link = item.get('link', '#')
+                    news_section += f"\n• [{title}]({link})"
+
+            message = (
+                f"🔍 *Analysis for {pair}* {sentiment_icon}\n\n"
+                f"💰 *Price:* `{data['price']}`\n"
+                f"📈 *RSI:* `{data['rsi']:.2f}`\n"
+                f"📢 *Sentiment:* {data['sentiment']}"
+                f"{news_section}"
+            )
+
+            await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
+
+        except Exception as e:
+            logger.error(f"Analyze command failed: {e}")
+            await update.message.reply_text("❌ Failed to fetch analysis.")
+
 async def check_signals_job(context: ContextTypes.DEFAULT_TYPE):
     """Periodic job to check for signals and alert the CHAT_ID."""
     if not CHAT_ID:
@@ -102,6 +150,7 @@ def main():
     # Add Handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("status", status))
+    application.add_handler(CommandHandler("analyze", analyze))
 
     # Add Job (Check every 15 mins)
     if CHAT_ID:
