@@ -179,7 +179,8 @@ You don't want to run this manually. You need a service that runs 24/5.
 
 * **Database:** Use **PostgreSQL** or **InfluxDB** (time-series optimized) to store your price and sentiment history.
 * **Scheduler:** Use **Prefect** or **Apache Airflow** to orchestrate the tasks (e.g., "Scrape news every hour," "Fetch price every 1 minute").
-* **Alerts:** Connect the service to a **Telegram Bot** or **Discord Webhook** so you get a notification on your phone when a "Pattern + News Sentiment" alignment occurs.
+* **Interface:** **Telegram Bot** serves as the primary user interface, delivering real-time trade tips and alerts directly to the user.
+* **Management:** **Swagger UI** (provided by FastAPI) is used for system management, configuration, and manual API interaction.
 
 ---
 
@@ -190,7 +191,7 @@ You don't want to run this manually. You need a service that runs 24/5.
 | **Week 1** | **Environment** | Set up Python, Pandas, and connect to a Broker API (Demo). |
 | **Week 2** | **Scraper** | Build the news scraper for the Economic Calendar. |
 | **Week 3** | **Analysis** | Code the technical indicators and sentiment logic. |
-| **Week 4** | **Integration** | Connect the logic to a Telegram bot for real-time alerts. |
+| **Week 4** | **Integration** | Implement Telegram Bot for alerts and configure Swagger UI for management. |
 
 ### A Note on Risk
 

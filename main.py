@@ -4,9 +4,9 @@ from contextlib import asynccontextmanager
 import asyncio
 import logging
 import os
-from fastapi.staticfiles import StaticFiles
 from yfinance_client import YFinanceClient
 from indicators import calculate_rsi
+from news_scraper import NewsScraper
 from config import TRADING_PAIRS
 
 # Configure logging
@@ -17,26 +17,12 @@ logger = logging.getLogger("forex_service")
 state = {
     "running": False,
     "latest_signal": {},
-    "errors": [],
-    "logs": []
+    "errors": []
 }
-
-# Custom Handler to capture logs for the browser
-class ListLogHandler(logging.Handler):
-    def emit(self, record):
-        log_entry = self.format(record)
-        state["logs"].append(log_entry)
-        # Keep only last 100 lines to prevent memory issues
-        if len(state["logs"]) > 100:
-            state["logs"].pop(0)
-
-# Attach the handler to our logger
-memory_handler = ListLogHandler()
-memory_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-logger.addHandler(memory_handler)
 
 # Initialize Yahoo Finance Client (No credentials needed)
 yfinance_client = YFinanceClient()
+news_scraper = NewsScraper()
 
 async def trading_engine_loop():
     """
@@ -66,14 +52,19 @@ async def trading_engine_loop():
                     elif rsi < config["oversold"]:
                         sentiment = "Oversold (Potential BUY)"
                     
-                    logger.info(f"Analysis [{instrument}]: Price={current_price:.5f} | RSI={rsi:.2f} | Sentiment={sentiment}")
+                    # --- Phase 3: News Gathering ---
+                    # Scrape news relevant to this pair
+                    news_items = await news_scraper.get_news(config.get("news_query", f"{instrument} forex news"))
                     
-                    # Update global state so we can see it at http://localhost:8000/
+                    logger.info(f"Analysis [{instrument}]: Price={current_price:.5f} | RSI={rsi:.2f} | Sentiment={sentiment} | News Items={len(news_items)}")
+                    
+                    # Update global state so we can see it via API/Swagger
                     state["latest_signal"][instrument] = {
                         "price": current_price,
                         "rsi": rsi,
                         "sentiment": sentiment,
-                        "timestamp": str(history.index[-1])
+                        "timestamp": str(history.index[-1]),
+                        "news": news_items
                     }
 
             # --- Phase 3: Storage/Alerts (Placeholder) ---
@@ -131,11 +122,6 @@ async def status():
         "latest_signal": state["latest_signal"]
     }
 
-@app.get("/api/logs")
-async def get_logs():
-    """Return the recent logs."""
-    return {"logs": state["logs"]}
-    
 @app.get("/api/pairs")
 async def get_pairs():
     """Return the list of configured trading pairs."""
@@ -155,6 +141,3 @@ async def start_engine():
         asyncio.create_task(trading_engine_loop())
         return {"message": "Engine started."}
     return {"message": "Engine is already running."}
-
-# This must be the last thing added to the app. It serves the React frontend.
-app.mount("/", StaticFiles(directory="static", html=True), name="static")

@@ -1,7 +1,9 @@
 # Python Forex Intelligence Service
 
 ## Overview
-This project aims to build a robust, automated Forex analysis service. It leverages Python to combine quantitative market data (price action) with qualitative data (news sentiment) to generate actionable trading signals. The system is designed to run 24/5, mirroring the Forex market hours, and deliver real-time alerts.
+This project aims to build a robust, automated Forex analysis service. It leverages Python to combine quantitative market data (price action) with qualitative data (news sentiment) to generate actionable trading signals.
+
+This service utilizes a **Telegram Bot** to deliver real-time trade tips and alerts directly to the user. System management and API interaction are handled via **Swagger UI** provided by FastAPI. The system is designed to run 24/5, mirroring the Forex market hours.
 
 ## Architecture
 
@@ -29,11 +31,13 @@ Bridges the gap between market movements and public sentiment.
 Ensures continuous operation and data persistence.
 - **Database:** PostgreSQL or InfluxDB for time-series data.
 - **Scheduler:** Prefect or Apache Airflow for task orchestration.
-- **Alerts:** Real-time notifications via Telegram Bot or Discord Webhooks.
+- **Alerts:** Real-time trade tips sent via **Telegram Bot**.
+- **Management:** API interaction via **Swagger UI**.
 
 ## Tech Stack
 - **Language:** Python
-- **Backend Framework:** FastAPI
+- **Backend Framework:** FastAPI (with Swagger UI)
+- **Interface:** Telegram Bot
 - **Data Manipulation:** Pandas, NumPy
 - **Visualization:** Matplotlib, Plotly
 - **Machine Learning:** Scikit-Learn, TensorFlow/PyTorch (LSTMs)
