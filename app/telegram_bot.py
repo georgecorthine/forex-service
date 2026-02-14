@@ -48,7 +48,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if "BUY" in info['sentiment']: icon = "🟢"
                 if "SELL" in info['sentiment']: icon = "🔴"
                 
-                display_pair = pair.replace("_", "\_")
+                display_pair = pair.replace("_", "\\_")
                 message += (
                     f"\n*{display_pair}* {icon}\n"
                     f"Price: `{info['price']}`\n"
@@ -68,7 +68,7 @@ async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     pair = context.args[0].upper()
-    display_pair = pair.replace("_", "\_")
+    display_pair = pair.replace("_", "\\_")
 
     async with httpx.AsyncClient() as client:
         try:
@@ -117,7 +117,7 @@ async def trade(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     pair = context.args[0].upper()
-    display_pair = pair.replace("_", "\_")
+    display_pair = pair.replace("_", "\\_")
 
     async with httpx.AsyncClient() as client:
         try:
@@ -149,6 +149,56 @@ async def trade(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.error(f"Trade command failed: {e}")
             await update.message.reply_text("❌ Error fetching trade instructions.")
 
+async def set_rsi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Update RSI thresholds dynamically."""
+    if not context.args or len(context.args) != 3:
+        await update.message.reply_text("⚠️ Usage: /setrsi <PAIR> <OVERBOUGHT> <OVERSOLD>\nExample: /setrsi EUR_USD 75 25")
+        return
+
+    pair = context.args[0].upper()
+    display_pair = pair.replace("_", "\\_")
+    
+    try:
+        overbought = int(context.args[1])
+        oversold = int(context.args[2])
+    except ValueError:
+        await update.message.reply_text("❌ Thresholds must be integers.")
+        return
+
+    async with httpx.AsyncClient() as client:
+        try:
+            payload = {
+                "instrument": pair,
+                "overbought": overbought,
+                "oversold": oversold
+            }
+            response = await client.post(f"{API_URL}/config/rsi", json=payload, timeout=10.0)
+            
+            if response.status_code == 404:
+                await update.message.reply_text(f"❌ Pair *{display_pair}* not found.", parse_mode=ParseMode.MARKDOWN)
+                return
+            
+            response.raise_for_status()
+            await update.message.reply_text(f"✅ Updated *{display_pair}* thresholds:\nOverbought: `{overbought}`\nOversold: `{oversold}`", parse_mode=ParseMode.MARKDOWN)
+
+        except Exception as e:
+            logger.error(f"Set RSI command failed: {e}")
+            await update.message.reply_text("❌ Failed to update configuration.")
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """List all available commands."""
+    message = (
+        "🤖 *Forex Bot Commands*\n\n"
+        "🔹 /start - Initialize the bot\n"
+        "🔹 /status - View market snapshot for all pairs\n"
+        "🔹 /analyze <PAIR> - Detailed analysis (RSI, Sentiment, News)\n"
+        "🔹 /trade <PAIR> - Get MT5 entry/exit instructions\n"
+        "🔹 /setrsi <PAIR> <OB> <OS> - Update RSI thresholds\n"
+        "    Example: `/setrsi EUR_USD 75 25`\n"
+        "🔹 /help - Show this list"
+    )
+    await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN)
+
 async def check_signals_job(context: ContextTypes.DEFAULT_TYPE):
     """Periodic job to check for signals and alert the CHAT_ID."""
     if not CHAT_ID:
@@ -162,7 +212,7 @@ async def check_signals_job(context: ContextTypes.DEFAULT_TYPE):
             if signals:
                 logger.info(f"Found signals: {list(signals.keys())}")
                 for pair, data in signals.items():
-                    display_pair = pair.replace("_", "\_")
+                    display_pair = pair.replace("_", "\\_")
                     message = (
                         f"🚨 *Trade Alert: {display_pair}* 🚨\n\n"
                         f"💰 *Price:* `{data['price']}`\n"
@@ -194,6 +244,8 @@ def main():
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("analyze", analyze))
     application.add_handler(CommandHandler("trade", trade))
+    application.add_handler(CommandHandler("setrsi", set_rsi))
+    application.add_handler(CommandHandler("help", help_command))
 
     # Add Job (Check every 15 mins)
     if CHAT_ID:

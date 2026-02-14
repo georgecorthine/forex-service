@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+yfinance
+pandas-ta
+pandas
+httpx
+python-telegram-bot
+requests
+beautifulsoup4
+lxml
