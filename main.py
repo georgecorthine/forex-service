@@ -157,6 +157,38 @@ async def get_pair_data(instrument: str):
         
     return state["latest_signal"][instrument]
 
+@app.get("/api/trade/{instrument}")
+async def get_trade_instruction(instrument: str):
+    """Generate specific MT5 trade instructions based on the latest signal."""
+    if instrument not in state["latest_signal"]:
+        raise HTTPException(status_code=404, detail="Instrument data not available.")
+    
+    data = state["latest_signal"][instrument]
+    price = data["price"]
+    sentiment = data["sentiment"]
+    
+    # Determine precision (JPY pairs use 3 decimals, others 5)
+    precision = 3 if "JPY" in instrument else 5
+    
+    trade_setup = {
+        "instrument": instrument,
+        "type": "WAIT",
+        "entry": round(price, precision),
+        "stop_loss": 0.0,
+        "take_profit": 0.0
+    }
+
+    if "BUY" in sentiment:
+        trade_setup["type"] = "BUY"
+        trade_setup["stop_loss"] = round(price * 0.995, precision)  # 0.5% Risk
+        trade_setup["take_profit"] = round(price * 1.01, precision) # 1.0% Reward
+    elif "SELL" in sentiment:
+        trade_setup["type"] = "SELL"
+        trade_setup["stop_loss"] = round(price * 1.005, precision)
+        trade_setup["take_profit"] = round(price * 0.99, precision)
+
+    return trade_setup
+
 @app.post("/api/control/stop")
 async def stop_engine():
     """Manually stop the analysis loop."""

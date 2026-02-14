@@ -48,8 +48,9 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if "BUY" in info['sentiment']: icon = "🟢"
                 if "SELL" in info['sentiment']: icon = "🔴"
                 
+                display_pair = pair.replace("_", "\_")
                 message += (
-                    f"\n*{pair}* {icon}\n"
+                    f"\n*{display_pair}* {icon}\n"
                     f"Price: `{info['price']}`\n"
                     f"RSI: `{info['rsi']:.1f}`\n"
                     f"Signal: _{info['sentiment']}_\n"
@@ -67,16 +68,17 @@ async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     pair = context.args[0].upper()
+    display_pair = pair.replace("_", "\_")
 
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(f"{API_URL}/pair/{pair}", timeout=10.0)
             
             if response.status_code == 404:
-                await update.message.reply_text(f"❌ Pair *{pair}* not found.", parse_mode=ParseMode.MARKDOWN)
+                await update.message.reply_text(f"❌ Pair *{display_pair}* not found.", parse_mode=ParseMode.MARKDOWN)
                 return
             elif response.status_code == 503:
-                await update.message.reply_text(f"⏳ Data for *{pair}* is not ready yet.", parse_mode=ParseMode.MARKDOWN)
+                await update.message.reply_text(f"⏳ Data for *{display_pair}* is not ready yet.", parse_mode=ParseMode.MARKDOWN)
                 return
             
             response.raise_for_status()
@@ -95,7 +97,7 @@ async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     news_section += f"\n• [{title}]({link})"
 
             message = (
-                f"🔍 *Analysis for {pair}* {sentiment_icon}\n\n"
+                f"🔍 *Analysis for {display_pair}* {sentiment_icon}\n\n"
                 f"💰 *Price:* `{data['price']}`\n"
                 f"📈 *RSI:* `{data['rsi']:.2f}`\n"
                 f"📢 *Sentiment:* {data['sentiment']}"
@@ -107,6 +109,45 @@ async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Analyze command failed: {e}")
             await update.message.reply_text("❌ Failed to fetch analysis.")
+
+async def trade(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Get specific MT5 trade instructions."""
+    if not context.args:
+        await update.message.reply_text("⚠️ Usage: /trade <PAIR>\nExample: /trade EUR_USD")
+        return
+
+    pair = context.args[0].upper()
+    display_pair = pair.replace("_", "\_")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(f"{API_URL}/trade/{pair}", timeout=10.0)
+            if response.status_code != 200:
+                await update.message.reply_text(f"❌ Could not generate trade for {pair}.")
+                return
+            
+            data = response.json()
+            
+            if data["type"] == "WAIT":
+                await update.message.reply_text(f"✋ *Hold Position*\nMarket is currently Neutral for {display_pair}.", parse_mode=ParseMode.MARKDOWN)
+                return
+
+            action_emoji = "🟢" if data["type"] == "BUY" else "🔴"
+            
+            message = (
+                f"📱 *MT5 Trade Instruction: {display_pair}*\n\n"
+                f"1️⃣ Open MT5 App > Quotes\n"
+                f"2️⃣ Tap *{display_pair}* > Trade\n"
+                f"3️⃣ Select: *Market Execution*\n\n"
+                f"📋 *Enter these details:*\n"
+                f"• Stop Loss: `{data['stop_loss']}`\n"
+                f"• Take Profit: `{data['take_profit']}`\n\n"
+                f"4️⃣ Tap {action_emoji} *{data['type']} by Market*"
+            )
+            await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN)
+        except Exception as e:
+            logger.error(f"Trade command failed: {e}")
+            await update.message.reply_text("❌ Error fetching trade instructions.")
 
 async def check_signals_job(context: ContextTypes.DEFAULT_TYPE):
     """Periodic job to check for signals and alert the CHAT_ID."""
@@ -121,8 +162,9 @@ async def check_signals_job(context: ContextTypes.DEFAULT_TYPE):
             if signals:
                 logger.info(f"Found signals: {list(signals.keys())}")
                 for pair, data in signals.items():
+                    display_pair = pair.replace("_", "\_")
                     message = (
-                        f"🚨 *Trade Alert: {pair}* 🚨\n\n"
+                        f"🚨 *Trade Alert: {display_pair}* 🚨\n\n"
                         f"💰 *Price:* `{data['price']}`\n"
                         f"📈 *RSI:* `{data['rsi']:.2f}`\n"
                         f"📢 *Signal:* {data['sentiment']}\n"
@@ -151,6 +193,7 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("analyze", analyze))
+    application.add_handler(CommandHandler("trade", trade))
 
     # Add Job (Check every 15 mins)
     if CHAT_ID:
