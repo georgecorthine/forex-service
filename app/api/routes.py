@@ -4,7 +4,7 @@
 from fastapi import APIRouter, HTTPException
 from utils.store import state
 from config.config import TRADING_PAIRS
-from models.model import RSIUpdate
+from models.model import RSIUpdate, AllPairsData, ActiveSignals, PairData, TradeInstruction
 from utils.engine import trading_engine_loop
 import asyncio
 
@@ -24,12 +24,12 @@ async def get_pairs():
     """Return the list of configured trading pairs."""
     return list(TRADING_PAIRS.keys())
 
-@router.get("/api/pairs/data")
+@router.get("/api/pairs/data", response_model=AllPairsData)
 async def get_all_pairs_data():
     """Return the latest analysis for all trading pairs."""
     return state["latest_signal"]
 
-@router.get("/api/pairs/signals")
+@router.get("/api/pairs/signals", response_model=ActiveSignals)
 async def get_active_signals():
     """Return only pairs with active Buy/Sell signals."""
     return {
@@ -38,7 +38,7 @@ async def get_active_signals():
         if "BUY" in data["sentiment"] or "SELL" in data["sentiment"]
     }
 
-@router.get("/api/pair/{instrument}")
+@router.get("/api/pair/{instrument}", response_model=PairData)
 async def get_pair_data(instrument: str):
     """Return the latest analysis for a specific trading pair."""
     if instrument not in TRADING_PAIRS:
@@ -49,7 +49,7 @@ async def get_pair_data(instrument: str):
         
     return state["latest_signal"][instrument]
 
-@router.get("/api/trade/{instrument}")
+@router.get("/api/trade/{instrument}", response_model=TradeInstruction)
 async def get_trade_instruction(instrument: str):
     """Generate specific MT5 trade instructions based on the latest signal."""
     if instrument not in state["latest_signal"]:

@@ -53,6 +53,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"\n*{display_pair}* {icon}\n"
                     f"Price: `{info['price']}`\n"
                     f"RSI: `{info['rsi']:.1f}`\n"
+                    f"News Sentiment: `{info['news_sentiment_score']:.3f}`\n"
                     f"Signal: _{info['sentiment']}_\n"
                 )
             
@@ -100,6 +101,7 @@ async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"🔍 *Analysis for {display_pair}* {sentiment_icon}\n\n"
                 f"💰 *Price:* `{data['price']}`\n"
                 f"📈 *RSI:* `{data['rsi']:.2f}`\n"
+                f"📰 *News Sentiment:* `{data['news_sentiment_score']:.3f}`\n"
                 f"📢 *Sentiment:* {data['sentiment']}"
                 f"{news_section}"
             )
@@ -111,7 +113,7 @@ async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Failed to fetch analysis.")
 
 async def trade(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Get specific MT5 trade instructions."""
+    """Get specific OANDA trade instructions."""
     if not context.args:
         await update.message.reply_text("⚠️ Usage: /trade <PAIR>\nExample: /trade EUR_USD")
         return
@@ -135,14 +137,14 @@ async def trade(update: Update, context: ContextTypes.DEFAULT_TYPE):
             action_emoji = "🟢" if data["type"] == "BUY" else "🔴"
             
             message = (
-                f"📱 *MT5 Trade Instruction: {display_pair}*\n\n"
-                f"1️⃣ Open MT5 App > Quotes\n"
-                f"2️⃣ Tap *{display_pair}* > Trade\n"
-                f"3️⃣ Select: *Market Execution*\n\n"
-                f"📋 *Enter these details:*\n"
-                f"• Stop Loss: `{data['stop_loss']}`\n"
-                f"• Take Profit: `{data['take_profit']}`\n\n"
-                f"4️⃣ Tap {action_emoji} *{data['type']} by Market*"
+                f"📱 *OANDA Trade Instruction: {display_pair}*\n\n"
+                f"1. Open OANDA App > Tap 'Trade' > Search for '{display_pair}'\n"
+                f"2. Select 'Market' Order\n\n"
+                f"3. Configure your trade:\n"
+                f"   • Units: *Set your desired trade size*\n"
+                f"   • Stop Loss: `{data['stop_loss']}`\n"
+                f"   • Take Profit: `{data['take_profit']}`\n\n"
+                f"4. Tap {action_emoji} *{data['type']}*"
             )
             await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN)
         except Exception as e:
@@ -192,12 +194,78 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔹 /start - Initialize the bot\n"
         "🔹 /status - View market snapshot for all pairs\n"
         "🔹 /analyze <PAIR> - Detailed analysis (RSI, Sentiment, News)\n"
-        "🔹 /trade <PAIR> - Get MT5 entry/exit instructions\n"
+        "🔹 /trade <PAIR> - Get OANDA entry/exit instructions\n"
         "🔹 /setrsi <PAIR> <OB> <OS> - Update RSI thresholds\n"
         "    Example: `/setrsi EUR_USD 75 25`\n"
+        "🔹 /example <COMMAND> - Show example output for a command\n"
+        "    Example: `/example analyze`\n"
         "🔹 /help - Show this list"
     )
     await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN)
+
+async def example(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show example data for different commands."""
+    if not context.args:
+        await update.message.reply_text(
+            "⚠️ Usage: /example <COMMAND>\n"
+            "Example: /example analyze\n"
+            "Available commands: status, analyze, trade, setrsi, signal"
+        )
+        return
+
+    command = context.args[0].lower()
+
+    if command == "status":
+        message = (
+            '📊 *Market Snapshot*\n\n'
+            '*EUR\\_USD* 🟢\n'
+            'Price: `1.05`\n'
+            'RSI: `25.0`\n'
+            'News Sentiment: `0.600`\n'
+            'Signal: _BUY (Confirmed by News)_\n\n'
+            '*GBP\\_USD* 🔴\n'
+            'Price: `1.25`\n'
+            'RSI: `75.0`\n'
+            'News Sentiment: `-0.500`\n'
+            'Signal: _SELL (Confirmed by News)_\n'
+        )
+    elif command == "analyze":
+        message = (
+            '🔍 *Analysis for EUR\\_USD* 🟢\n\n'
+            '💰 *Price:* `1.05`\n'
+            '📈 *RSI:* `25.00`\n'
+            '📰 *News Sentiment:* `0.600`\n'
+            '📢 *Sentiment:* BUY (Confirmed by News)\n\n'
+            '📰 *Recent News:*\n'
+            '• [Positive News for EUR](https://example.com)'
+        )
+    elif command == "trade":
+        message = (
+            "📱 *OANDA Trade Instruction: EUR\\_USD*\n\n"
+            "1. Open OANDA App > Tap 'Trade' > Search for 'EUR\\_USD'\n"
+            "2. Select 'Market' Order\n\n"
+            "3. Configure your trade:\n"
+            "   • Units: *Set your desired trade size*\n"
+            "   • Stop Loss: `1.045`\n"
+            "   • Take Profit: `1.06`\n\n"
+            "4. Tap 🟢 *BUY*"
+        )
+    elif command == "setrsi":
+        message = '✅ Updated *EUR\\_USD* thresholds:\nOverbought: `75`\nOversold: `25`'
+    elif command == "signal":
+        message = (
+            '🚨 *Trade Alert: EUR\\_USD* 🚨\n\n'
+            '💰 *Price:* `1.05`\n'
+            '📈 *RSI:* `25.00`\n'
+            '📰 *News Sentiment:* `0.600`\n'
+            '📢 *Signal:* BUY (Confirmed by News)\n\n'
+            '🤔 *Reasoning:* RSI is oversold and news sentiment is positive.'
+        )
+    else:
+        message = f"Unknown example command: {command}"
+
+    await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN)
+
 
 async def check_signals_job(context: ContextTypes.DEFAULT_TYPE):
     """Periodic job to check for signals and alert the CHAT_ID."""
@@ -213,12 +281,20 @@ async def check_signals_job(context: ContextTypes.DEFAULT_TYPE):
                 logger.info(f"Found signals: {list(signals.keys())}")
                 for pair, data in signals.items():
                     display_pair = pair.replace("_", "\\_")
+                    
+                    reasoning = ""
+                    if "BUY" in data["sentiment"]:
+                        reasoning = "RSI is oversold and news sentiment is positive."
+                    elif "SELL" in data["sentiment"]:
+                        reasoning = "RSI is overbought and news sentiment is negative."
+
                     message = (
                         f"🚨 *Trade Alert: {display_pair}* 🚨\n\n"
                         f"💰 *Price:* `{data['price']}`\n"
                         f"📈 *RSI:* `{data['rsi']:.2f}`\n"
-                        f"📢 *Signal:* {data['sentiment']}\n"
-                        f"📰 *News Items:* {len(data.get('news', []))}\n"
+                        f"📰 *News Sentiment:* `{data['news_sentiment_score']:.3f}`\n"
+                        f"📢 *Signal:* {data['sentiment']}\n\n"
+                        f"🤔 *Reasoning:* {reasoning}"
                     )
                     await context.bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=ParseMode.MARKDOWN)
             else:
@@ -246,6 +322,7 @@ def main():
     application.add_handler(CommandHandler("trade", trade))
     application.add_handler(CommandHandler("setrsi", set_rsi))
     application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("example", example))
 
     # Add Job (Check every 15 mins)
     if CHAT_ID:
