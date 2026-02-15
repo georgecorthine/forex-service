@@ -7,6 +7,8 @@ from typing import List, Dict
 class PeeweeBaseModel(pw.Model):
     """A Peewee base model that uses our SQLite database."""
     class Meta:
+        # set constraints and indexes
+        indexes = (('instrument', 'timestamp'), True) # creates a unique index
         database = db
 
 class SignalHistory(PeeweeBaseModel):
@@ -15,6 +17,7 @@ class SignalHistory(PeeweeBaseModel):
     instrument = pw.CharField()
     sentiment = pw.CharField()
     price = pw.FloatField()
+
     rsi = pw.FloatField()
     news_sentiment_score = pw.FloatField(default=0.0)
 
@@ -39,7 +42,7 @@ class PairData(BaseModel):
     sentiment: str = Field(..., example="Neutral")
     news_sentiment_score: float = Field(..., example=0.1)
     timestamp: str = Field(..., example="2023-10-27T12:00:00Z")
-    news: List[NewsItem] = Field(..., example=[
+    news: List[NewsItem] = Field(default=[], example=[
         {"title": "Forex Market News", "link": "https://example.com", "pub_date": "2023-10-27T12:00:00Z", "sentiment_score": 0.5}
     ])
 

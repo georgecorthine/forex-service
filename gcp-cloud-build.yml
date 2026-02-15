@@ -1,0 +1,20 @@
+name: GCP Cloud Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Google Cloud Build
+        uses: google-github-actions/cloud-build@v1
+        with:
+          gcp_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: your-gcp-project-id # Replace with your GCP project ID
+          cloud_build_configuration: cloudbuild.yaml

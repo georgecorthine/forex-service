@@ -27,6 +27,10 @@ async def get_pairs():
 @router.get("/api/pairs/data", response_model=AllPairsData)
 async def get_all_pairs_data():
     """Return the latest analysis for all trading pairs."""
+    # Ensure news is always present, even if it's an empty list
+    for pair, data in state["latest_signal"].items():
+        if 'news' not in data:
+            data['news'] = []
     return state["latest_signal"]
 
 @router.get("/api/pairs/signals", response_model=ActiveSignals)

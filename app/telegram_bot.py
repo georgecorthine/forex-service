@@ -2,9 +2,12 @@ import asyncio
 import logging
 import os
 import httpx
+import datetime
 from telegram import Update
+from telegram import __version__ as TG_VER
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Defaults
 
 # --- Configuration ---
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -12,11 +15,11 @@ CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 # The URL of your local FastAPI service
 API_URL = "http://localhost:8000/api"
-CHECK_INTERVAL = 900  # Check every 15 minutes (in seconds)
+CHECK_HOUR = 14  # Hour to check for signals (UTC) - Example: 2 PM UTC
 
 # Configure logging
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
 logger = logging.getLogger("telegram_bot")
@@ -47,7 +50,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 icon = "⚪"
                 if "BUY" in info['sentiment']: icon = "🟢"
                 if "SELL" in info['sentiment']: icon = "🔴"
-                
+
                 display_pair = pair.replace("_", "\\_")
                 message += (
                     f"\n*{display_pair}* {icon}\n"
@@ -56,10 +59,13 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"News Sentiment: `{info['news_sentiment_score']:.3f}`\n"
                     f"Signal: _{info['sentiment']}_\n"
                 )
-            
+
             await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN)
+        except httpx.RequestError as e:
+            logger.error(f"Network error while fetching status: {e}")
+            await update.message.reply_text("❌ Network error connecting to Forex API.")
         except Exception as e:
-            logger.error(f"Status check failed: {e}")
+            logger.exception("Status check failed due to an unexpected error.")
             await update.message.reply_text("❌ Error connecting to Forex API.")
 
 async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -73,14 +79,14 @@ async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(f"{API_URL}/pair/{pair}", timeout=10.0)
-            
+            response = await client.get(f"{API_URL}/pair/{pair}", timeout=10)
+
             if response.status_code == 404:
                 await update.message.reply_text(f"❌ Pair *{display_pair}* not found.", parse_mode=ParseMode.MARKDOWN)
                 return
             elif response.status_code == 503:
                 await update.message.reply_text(f"⏳ Data for *{display_pair}* is not ready yet.", parse_mode=ParseMode.MARKDOWN)
-                return
+                return 
             
             response.raise_for_status()
             data = response.json()
@@ -108,8 +114,11 @@ async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
 
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error {e.response.status_code} while fetching analysis for {pair}: {e}")
+            await update.message.reply_text(f"❌ Error: HTTP {e.response.status_code} - {e.response.text}")
         except Exception as e:
-            logger.error(f"Analyze command failed: {e}")
+            logger.exception(f"Analyze command failed for {pair}: {e}")
             await update.message.reply_text("❌ Failed to fetch analysis.")
 
 async def trade(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -128,7 +137,7 @@ async def trade(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text(f"❌ Could not generate trade for {pair}.")
                 return
             
-            data = response.json()
+            data = response.json() 
             
             if data["type"] == "WAIT":
                 await update.message.reply_text(f"✋ *Hold Position*\nMarket is currently Neutral for {display_pair}.", parse_mode=ParseMode.MARKDOWN)
@@ -159,7 +168,7 @@ async def set_rsi(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     pair = context.args[0].upper()
     display_pair = pair.replace("_", "\\_")
-    
+
     try:
         overbought = int(context.args[1])
         oversold = int(context.args[2])
@@ -179,9 +188,12 @@ async def set_rsi(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if response.status_code == 404:
                 await update.message.reply_text(f"❌ Pair *{display_pair}* not found.", parse_mode=ParseMode.MARKDOWN)
                 return
-            
+
             response.raise_for_status()
             await update.message.reply_text(f"✅ Updated *{display_pair}* thresholds:\nOverbought: `{overbought}`\nOversold: `{oversold}`", parse_mode=ParseMode.MARKDOWN)
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error {e.response.status_code} while setting RSI for {pair}: {e}")
+            await update.message.reply_text(f"❌ Error: HTTP {e.response.status_code} - {e.response.text}")
 
         except Exception as e:
             logger.error(f"Set RSI command failed: {e}")
@@ -276,7 +288,7 @@ async def check_signals_job(context: ContextTypes.DEFAULT_TYPE):
         try:
             response = await client.get(f"{API_URL}/pairs/signals", timeout=10.0)
             signals = response.json()
-            
+
             if signals:
                 logger.info(f"Found signals: {list(signals.keys())}")
                 for pair, data in signals.items():
@@ -312,6 +324,18 @@ def main():
         logger.error("❌ TELEGRAM_BOT_TOKEN is missing.")
         return
 
+    # Check if telegram package version is suitable
+    if TG_VER < "20.0":
+        raise EnvironmentError(
+            "This example is not compatible with your current Telegram Bot "
+            f"API version {TG_VER}. Please upgrade to version 20.0 or higher."
+        )
+
+    defaults = Defaults(parse_mode=ParseMode.MARKDOWN)
+    # Build application and store the bot object for post_init
+    application = Application.builder().token(BOT_TOKEN).defaults(defaults).build()
+
+
     # Create the Application
     application = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
@@ -326,13 +350,14 @@ def main():
 
     # Add Job (Check every 15 mins)
     if CHAT_ID:
-        application.job_queue.run_repeating(check_signals_job, interval=CHECK_INTERVAL, first=10)
+        application.job_queue.run_daily(check_signals_job, time=datetime.time(hour=CHECK_HOUR, minute=0, second=0))
     else:
         logger.warning("⚠️ TELEGRAM_CHAT_ID not set. Automatic alerts disabled.")
 
     # Run
     logger.info("🤖 Bot is polling...")
     application.run_polling()
+
 
 if __name__ == "__main__":
     main()
