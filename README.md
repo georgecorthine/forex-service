@@ -1,60 +1,80 @@
-# Python Forex Intelligence Service
+# Forex Intelligence Service
 
 ## Overview
-This project aims to build a robust, automated Forex analysis service. It leverages Python to combine quantitative market data (price action) with qualitative data (news sentiment) to generate actionable trading signals.
 
-This service utilizes a **Telegram Bot** to deliver real-time trade tips and alerts directly to the user. System management and API interaction are handled via **Swagger UI** provided by FastAPI. The system is designed to run 24/5, mirroring the Forex market hours.
+This project is a Python-based service that provides real-time forex trading signals. It uses a combination of technical analysis (RSI) and fundamental analysis (news sentiment) to generate signals, which are then sent to the user via a Telegram bot.
 
-## Architecture
+The service is designed to be a "set it and forget it" tool for forex traders who want to be alerted to potential trading opportunities without having to constantly monitor the markets themselves.
 
-The service is built upon four distinct phases:
+## Features
 
-### Phase 1: The Data Engine (Gathering)
-Responsible for ingesting raw data from multiple sources.
-- **Market Data:** Real-time ticks and historical candles via PuPrime (MetaTrader 5).
-- **News Events:** Scraping high-impact economic events (e.g., CPI, Interest Rates) from economic calendars using BeautifulSoup or Selenium.
-
-### Phase 2: The Analysis Layer (The Brain)
-Processes raw data into technical indicators.
-- **Trend Analysis:** Moving Averages (EMA).
-- **Momentum:** Relative Strength Index (RSI).
-- **Volatility:** Average True Range (ATR) for risk management.
-- **Libraries:** Pandas-TA, TA-Lib.
-
-### Phase 3: News Sentiment & Impact
-Bridges the gap between market movements and public sentiment.
-- **Sentiment Scoring:** Analyzes headlines using VADER or TextBlob.
-- **Impact Mapping:** Correlates keywords (e.g., "Rate Hike") with potential market impact.
-- **LLM Integration:** Summarizes market sentiment using LLM APIs.
-
-### Phase 4: Storage & Orchestration
-Ensures continuous operation and data persistence.
-- **Database:** PostgreSQL or InfluxDB for time-series data.
-- **Scheduler:** Prefect or Apache Airflow for task orchestration.
-- **Alerts:** Real-time trade tips sent via **Telegram Bot**.
-- **Management:** API interaction via **Swagger UI**.
+- **Real-time Signal Generation:** The service continuously monitors the forex markets and generates signals in real time.
+- **RSI-Based Technical Analysis:** Uses the Relative Strength Index (RSI) to identify overbought and oversold conditions.
+- **News-Based Sentiment Analysis:** Uses news sentiment to confirm RSI signals and avoid false positives.
+- **Telegram Bot Integration:** Delivers trading signals directly to your Telegram account.
+- **REST API:** Provides a FastAPI-based REST API for interacting with the service and retrieving data.
+- **Database Storage:** Stores all generated signals in a local SQLite database for historical analysis.
 
 ## Tech Stack
-- **Language:** Python
-- **Backend Framework:** FastAPI (with Swagger UI)
-- **Interface:** Telegram Bot
-- **Data Manipulation:** Pandas, NumPy
-- **Visualization:** Matplotlib, Plotly
-- **Machine Learning:** Scikit-Learn, TensorFlow/PyTorch (LSTMs)
-- **Scraping:** BeautifulSoup, Selenium/Playwright
-- **APIs:** MetaTrader 5 (requires Windows), yfinance
 
-## Roadmap
+- **Language:** Python 3
+- **Backend Framework:** FastAPI
+- **Data Provider:** OANDA API
+- **Telegram Bot:** `python-telegram-bot`
+- **Data Manipulation:** Pandas
+- **Sentiment Analysis:** VADER
+- **Database:** SQLite with Peewee ORM
 
-| Sprint | Focus | Objective |
-| --- | --- | --- |
-| **Week 1** | Environment | Setup Python environment and connect to Broker API (Demo). |
-| **Week 2** | Scraper | Build the news scraper for Economic Calendars. |
-| **Week 3** | Analysis | Implement technical indicators and sentiment logic. |
-| **Week 4** | Integration | Connect logic to Telegram bot for real-time alerts. |
+## Getting Started
+
+### 1. Prerequisites
+
+- Python 3.10+
+- An OANDA account (demo or live) with an API key.
+- A Telegram account and a Telegram bot token.
+
+### 2. Installation
+
+1.  Clone this repository:
+    ```bash
+    git clone https://github.com/georgecorthine/forex-service.git
+    cd forex-service
+    ```
+
+2.  Create a virtual environment and install the dependencies:
+    ```bash
+    python -m venv venv
+    source venv/bin/activate
+    pip install -r app/requirements.txt
+    ```
+
+### 3. Configuration
+
+The service is configured using environment variables. Create a `.env` file in the `app` directory and add the following variables:
+
+```
+OANDA_API_KEY=<your-oanda-api-key>
+OANDA_ACCOUNT_ID=<your-oanda-account-id>
+OANDA_ENVIRONMENT=practice  # or "live"
+TELEGRAM_BOT_TOKEN=<your-telegram-bot-token>
+TELEGRAM_CHAT_ID=<your-telegram-chat-id>
+```
+
+You can get your `TELEGRAM_CHAT_ID` by sending a message to your bot and then visiting `https://api.telegram.org/bot<your-bot-token>/getUpdates`.
+
+### 4. Running the Service
+
+To run the service, simply execute the `start.py` script from within the `app` directory:
+
+```bash
+cd app
+./start.py
+```
+
+The service will start, and you will see output in your console. The FastAPI server will be running on `http://localhost:8000`, and the Telegram bot will start polling for messages.
+
+You can access the API documentation at `http://localhost:8000/docs`.
 
 ## Disclaimer
-**Trading involves significant risk.** This software is for educational and analytical purposes only. Always backtest strategies using libraries like `Backtrader` before deploying capital.
 
----
-*Based on the project plan outlined in `plan.md`.*
+**Trading involves significant risk.** This software is for educational and analytical purposes only. Always backtest strategies and use a demo account before risking real capital.

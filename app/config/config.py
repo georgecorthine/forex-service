@@ -1,4 +1,12 @@
-# Trading Configuration / Data Model
+import os
+
+# --- OANDA Configuration ---
+# Securely load credentials from environment variables
+OANDA_API_TOKEN = os.getenv("OANDA_API_TOKEN")
+OANDA_ACCOUNT_ID = os.getenv("OANDA_ACCOUNT_ID")
+OANDA_API_ENVIRONMENT = "practice"  # Use "live" for real money
+
+# --- Trading Configuration / Data Model ---
 
 # Define the instruments and their specific strategy parameters here.
 # This allows you to tune the strategy for each pair independently.

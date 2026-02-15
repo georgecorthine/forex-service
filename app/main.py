@@ -8,6 +8,7 @@ from bs4 import XMLParsedAsHTMLWarning
 from utils.store import state
 from utils.engine import trading_engine_loop
 from api.routes import router
+from database import initialize_db
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,11 +20,15 @@ warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle startup and shutdown events."""
-    # Startup: Start the trading loop
-    state["running"] = True
+    # Startup: Initialize database and start the trading loop
+    logger.info("Initializing database...")
+    initialize_db()
     
+    state["running"] = True
     loop_task = asyncio.create_task(trading_engine_loop())
+    
     yield
+    
     # Shutdown: Stop the loop gracefully
     state["running"] = False
     loop_task.cancel()

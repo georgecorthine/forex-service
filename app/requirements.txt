@@ -1,10 +1,11 @@
 fastapi
 uvicorn[standard]
 yfinance
-pandas-ta
 pandas
 httpx
-python-telegram-bot
+python-telegram-bot[job-queue]
 requests
 beautifulsoup4
 lxml
+oandapyV20
+vaderSentiment
