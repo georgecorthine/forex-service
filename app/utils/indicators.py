@@ -10,7 +10,7 @@ def calculate_rsi(df: pd.DataFrame, length: int = 14) -> float:
 
     # Get the Close price series
     close = df["Close"]
-    
+
     # Calculate price changes
     delta = close.diff()
 
@@ -26,6 +26,31 @@ def calculate_rsi(df: pd.DataFrame, length: int = 14) -> float:
     # Calculate RS and RSI
     rs = avg_gain / avg_loss
     rsi_series = 100 - (100 / (1 + rs))
-    
+
     # Return the latest calculated value
     return rsi_series.iloc[-1]
+
+
+def calculate_sma(df: pd.DataFrame, length: int = 200) -> float:
+    """
+    Calculates the Simple Moving Average (SMA) for the given dataframe.
+    Returns the most recent SMA value.
+
+    Args:
+        df: DataFrame with 'Close' column
+        length: Period for SMA calculation
+
+    Returns:
+        Most recent SMA value or None if insufficient data
+    """
+    if df.empty or "Close" not in df.columns:
+        return None
+
+    if len(df) < length:
+        return None
+
+    # Calculate SMA
+    sma = df["Close"].rolling(window=length).mean()
+
+    # Return the latest calculated value
+    return sma.iloc[-1]

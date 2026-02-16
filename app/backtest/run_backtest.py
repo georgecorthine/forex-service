@@ -24,7 +24,7 @@ def run_single_backtest(instrument: str,
                        risk_percentage: float = 1.0,
                        reward_ratio: float = 2.0,
                        granularity: str = "D",
-                       count: int = 2000):
+                       count: int = None):
     """
     Run backtest for a single instrument.
 
@@ -43,6 +43,23 @@ def run_single_backtest(instrument: str,
     logger.info(f"BACKTESTING: {instrument}")
     logger.info(f"{'='*80}")
 
+    # Get strategy settings from config
+    config = TRADING_PAIRS.get(instrument, {})
+    # Allow config to override granularity, but respect function parameter if provided
+    if granularity == "D" and "granularity" in config:
+        granularity = config.get("granularity", "D")
+
+    # Auto-calculate count for 1 year based on granularity
+    if count is None:
+        if granularity == "H4":
+            count = 2190  # ~6 candles/day × 365 days
+        elif granularity == "H1":
+            count = 8760  # ~24 candles/day × 365 days
+        elif granularity == "D":
+            count = 365  # 1 year of daily candles
+        else:
+            count = 365  # Default to 1 year
+
     # Fetch data
     logger.info("Step 1: Fetching historical data...")
     fetcher = BacktestDataFetcher()
@@ -52,10 +69,10 @@ def run_single_backtest(instrument: str,
         logger.error(f"Failed to fetch data: {e}")
         return None
 
-    # Get RSI settings from config
-    config = TRADING_PAIRS.get(instrument, {})
     rsi_overbought = config.get("overbought", 70)
     rsi_oversold = config.get("oversold", 30)
+    ma_period = config.get("ma_period", 200)
+    use_trend_filter = config.get("use_trend_filter", False)
 
     # Run backtest
     logger.info("Step 2: Running backtest...")
@@ -64,7 +81,9 @@ def run_single_backtest(instrument: str,
         risk_percentage=risk_percentage,
         reward_ratio=reward_ratio,
         rsi_overbought=rsi_overbought,
-        rsi_oversold=rsi_oversold
+        rsi_oversold=rsi_oversold,
+        ma_period=ma_period,
+        use_trend_filter=use_trend_filter
     )
 
     results = engine.run(data, instrument)
@@ -80,7 +99,9 @@ def run_single_backtest(instrument: str,
 def run_multi_instrument_backtest(instruments: list = None,
                                   initial_balance: float = 10000.0,
                                   risk_percentage: float = 1.0,
-                                  reward_ratio: float = 2.0):
+                                  reward_ratio: float = 2.0,
+                                  granularity: str = "D",
+                                  count: int = None):
     """
     Run backtest for multiple instruments and aggregate results.
 
@@ -89,6 +110,8 @@ def run_multi_instrument_backtest(instruments: list = None,
         initial_balance: Starting balance
         risk_percentage: Risk per trade (%)
         reward_ratio: Reward-to-risk ratio
+        granularity: Data granularity
+        count: Number of candles
 
     Returns:
         Dictionary with aggregated results
@@ -107,7 +130,9 @@ def run_multi_instrument_backtest(instruments: list = None,
             instrument=instrument,
             initial_balance=initial_balance,
             risk_percentage=risk_percentage,
-            reward_ratio=reward_ratio
+            reward_ratio=reward_ratio,
+            granularity=granularity,
+            count=count
         )
 
         if results:
@@ -156,16 +181,31 @@ def save_results(results: dict, filename: str = None):
 
 
 if __name__ == "__main__":
-    # Example usage
-    if len(sys.argv) > 1:
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Run forex backtest')
+    parser.add_argument('instrument', nargs='?', help='Specific instrument to test (e.g., USD_CHF)')
+    parser.add_argument('--granularity', '-g', help='Timeframe: D, H4, H1, etc. (overrides config)')
+    parser.add_argument('--count', '-c', type=int, help='Number of candles to fetch')
+
+    args = parser.parse_args()
+
+    if args.instrument:
         # Run for specific instrument
-        instrument = sys.argv[1].upper()
-        single_result = run_single_backtest(instrument)
+        instrument = args.instrument.upper()
+        single_result = run_single_backtest(
+            instrument,
+            granularity=args.granularity if args.granularity else "D",
+            count=args.count
+        )
         # Wrap single result in a dict for save_results
         results = {instrument: single_result} if single_result else None
     else:
         # Run for all configured instruments
-        results = run_multi_instrument_backtest()
+        results = run_multi_instrument_backtest(
+            granularity=args.granularity if args.granularity else "D",
+            count=args.count
+        )
 
     if results:
         save_results(results)

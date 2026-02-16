@@ -85,6 +85,11 @@ export CHECK_HOUR=14
 export ACCOUNT_BALANCE=10000.0    # Your account balance in USD (default: 10000)
 export RISK_PERCENTAGE=1.0        # Percentage of account to risk per trade (default: 1.0%)
 export REWARD_RATIO=2.0           # Reward-to-risk ratio for take profit (default: 2.0)
+
+# Timeframe Configuration
+export DEFAULT_GRANULARITY=D      # Default timeframe for all pairs: D, H4, H1, etc. (default: D)
+export USD_CHF_GRANULARITY=H4     # Per-pair override (optional)
+export GBP_USD_GRANULARITY=D      # Per-pair override (optional)
 ```
 
 **Getting your Telegram Chat ID:**
@@ -143,12 +148,26 @@ Validate your strategy on historical data:
 ```bash
 cd app
 
-# Test single instrument
-python -m backtest.run_backtest EUR_USD
-
-# Test all instruments
+# Test all instruments (default: Daily timeframe)
 python -m backtest.run_backtest
+
+# Test all instruments on H4 (4-hour)
+DEFAULT_GRANULARITY=H4 python -m backtest.run_backtest
+
+# Test single instrument with specific timeframe
+python -m backtest.run_backtest USD_CHF --granularity H4
+
+# Compare timeframes for optimization
+python -m backtest.run_backtest USD_CHF -g D    # Daily
+python -m backtest.run_backtest USD_CHF -g H4   # 4-hour
+python -m backtest.run_backtest USD_CHF -g H1   # Hourly
 ```
+
+**Available Timeframes:**
+- **D** (Daily): 1 signal/day, long-term trading
+- **H4** (4-hour): 6 signals/day, swing trading
+- **H1** (Hourly): 24 signals/day, day trading
+- **M30, M15, M5** (Minutes): High-frequency trading
 
 **Approval Criteria:**
 - Win Rate ≥ 50%

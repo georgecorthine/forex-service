@@ -1,0 +1,18 @@
+{
+  "EUR_USD": {
+    "initial_balance": 10000.0,
+    "final_balance": 10543.27994471776,
+    "total_return": 543.2799447177604,
+    "total_return_pct": 5.4327994471776035,
+    "total_trades": 79,
+    "winning_trades": 30,
+    "losing_trades": 49,
+    "win_rate": 37.9746835443038,
+    "avg_win": 1.0000166234414938,
+    "avg_loss": -0.4999933431041629,
+    "profit_factor": 1.2245264542429608,
+    "max_drawdown": 3.512493906921226,
+    "sharpe_ratio": 0.0956477991868307,
+    "num_trades": 79
+  }
+}

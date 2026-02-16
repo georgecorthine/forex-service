@@ -2,6 +2,24 @@
 
 This directory contains the backtesting framework for validating the RSI + News Sentiment trading strategy.
 
+## Quick Reference
+
+```bash
+# Test all pairs (default: Daily)
+python -m backtest.run_backtest
+
+# Test all pairs on H4
+DEFAULT_GRANULARITY=H4 python -m backtest.run_backtest
+
+# Test specific pair
+python -m backtest.run_backtest USD_CHF -g H4
+
+# Compare timeframes
+python -m backtest.run_backtest USD_CHF -g D    # Daily
+python -m backtest.run_backtest USD_CHF -g H4   # 4-hour
+python -m backtest.run_backtest USD_CHF -g H1   # Hourly
+```
+
 ## Overview
 
 The backtesting engine simulates the strategy on historical data to evaluate its performance before risking real capital.
@@ -33,30 +51,100 @@ Main runner script for executing backtests
 
 ## Quick Start
 
-### Single Instrument Backtest
-
-```bash
-cd app
-python -m backtest.run_backtest EUR_USD
-```
-
-### All Instruments Backtest
+### All Instruments Backtest (Default: Daily)
 
 ```bash
 cd app
 python -m backtest.run_backtest
 ```
 
+### Single Instrument Backtest
+
+```bash
+cd app
+python -m backtest.run_backtest USD_CHF
+```
+
+### Test with H4 Timeframe
+
+```bash
+cd app
+python -m backtest.run_backtest USD_CHF --granularity H4
+# Or short form
+python -m backtest.run_backtest USD_CHF -g H4
+```
+
+### All Instruments on H4
+
+```bash
+cd app
+DEFAULT_GRANULARITY=H4 python -m backtest.run_backtest
+```
+
 ## Configuration
 
-Edit parameters in `run_backtest.py`:
+### Method 1: Command-Line Arguments (Recommended for Testing)
+
+```bash
+# Test specific instrument on H4
+python -m backtest.run_backtest USD_CHF --granularity H4
+
+# Test with custom candle count
+python -m backtest.run_backtest GBP_USD -g H4 -c 1000
+
+# Available granularities: M1, M5, M15, M30, H1, H4, D, W, M
+python -m backtest.run_backtest USD_CHF -g H1
+```
+
+**Command-line options:**
+- `instrument` - Specific instrument to test (optional, runs all if omitted)
+- `-g, --granularity` - Timeframe: D (daily), H4 (4-hour), H1 (hourly), etc.
+- `-c, --count` - Number of candles to fetch (auto-calculated if omitted)
+
+### Method 2: Environment Variables (Recommended for Live Trading)
+
+```bash
+# Set default for all pairs
+export DEFAULT_GRANULARITY=H4
+python -m backtest.run_backtest
+
+# Set per-pair (mix and match!)
+export USD_CHF_GRANULARITY=H4
+export GBP_USD_GRANULARITY=D
+python -m backtest.run_backtest
+
+# Or create a .env file:
+DEFAULT_GRANULARITY=H4
+USD_CHF_GRANULARITY=H4
+GBP_USD_GRANULARITY=D
+```
+
+### Method 3: Config File (Fallback)
+
+Edit `config/config.py`:
+
+```python
+TRADING_PAIRS = {
+    "USD_CHF": {
+        "granularity": os.getenv("USD_CHF_GRANULARITY", "D"),
+        "rsi_length": 14,
+        "overbought": 70,
+        "oversold": 30,
+        ...
+    }
+}
+```
+
+**Priority order:** Command-line args → Environment variables → Config file
+
+### Strategy Parameters
 
 ```python
 initial_balance = 10000.0   # Starting balance
 risk_percentage = 1.0       # Risk 1% per trade
 reward_ratio = 2.0          # 2:1 reward-to-risk
-granularity = "D"           # Daily candles
-count = 2000                # Number of candles to test
+rsi_overbought = 70         # RSI sell threshold
+rsi_oversold = 30           # RSI buy threshold
 ```
 
 ## Understanding Results
@@ -120,9 +208,32 @@ BACKTEST RESULTS SUMMARY
 ================================================================================
 ```
 
+## Timeframe Comparison
+
+### Choosing the Right Timeframe
+
+| Timeframe | Candles/Year | Trades/Year* | Best For | Notes |
+|-----------|--------------|--------------|----------|-------|
+| **D** (Daily) | 365 | 10-20 | Long-term, low maintenance | 1 signal per day, less noise |
+| **H4** (4-hour) | 2,190 | 60-120 | Swing trading, active | 6 signals per day, balanced |
+| **H1** (Hourly) | 8,760 | 240-480 | Day trading, very active | 24 signals per day, more noise |
+
+*Approximate, depends on market conditions
+
+### Quick Comparison Test
+
+```bash
+# Compare same pair on different timeframes
+python -m backtest.run_backtest USD_CHF -g D
+python -m backtest.run_backtest USD_CHF -g H4
+python -m backtest.run_backtest USD_CHF -g H1
+
+# Compare results to find optimal timeframe for each pair
+```
+
 ## Advanced Usage
 
-### Custom Parameters
+### Custom Parameters (Programmatic)
 
 ```python
 from backtest.backtest_engine import BacktestEngine
@@ -142,6 +253,16 @@ engine = BacktestEngine(
 )
 
 results = engine.run(data, "EUR_USD")
+```
+
+### Batch Testing Multiple Timeframes
+
+```bash
+# Test all timeframes for a pair
+for tf in D H4 H1; do
+  echo "Testing $tf..."
+  python -m backtest.run_backtest USD_CHF -g $tf
+done
 ```
 
 ### Export Trades

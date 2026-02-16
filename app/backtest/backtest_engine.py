@@ -5,7 +5,7 @@ import pandas as pd
 import logging
 from typing import List, Dict, Tuple
 from datetime import datetime
-from utils.indicators import calculate_rsi
+from utils.indicators import calculate_rsi, calculate_sma
 from utils.risk_management import calculate_trade_levels
 
 logger = logging.getLogger("backtest")
@@ -88,7 +88,9 @@ class BacktestEngine:
                  rsi_period: int = 14,
                  rsi_overbought: int = 70,
                  rsi_oversold: int = 30,
-                 max_concurrent_trades: int = 1):
+                 max_concurrent_trades: int = 1,
+                 ma_period: int = 200,
+                 use_trend_filter: bool = True):
         """
         Initialize the backtest engine.
 
@@ -100,6 +102,8 @@ class BacktestEngine:
             rsi_overbought: RSI overbought threshold
             rsi_oversold: RSI oversold threshold
             max_concurrent_trades: Maximum number of concurrent open trades
+            ma_period: Moving average period for trend filter
+            use_trend_filter: Whether to use MA trend filter
         """
         self.initial_balance = initial_balance
         self.balance = initial_balance
@@ -109,6 +113,8 @@ class BacktestEngine:
         self.rsi_overbought = rsi_overbought
         self.rsi_oversold = rsi_oversold
         self.max_concurrent_trades = max_concurrent_trades
+        self.ma_period = ma_period
+        self.use_trend_filter = use_trend_filter
 
         self.trades: List[Trade] = []
         self.open_trades: List[Trade] = []
@@ -149,12 +155,13 @@ class BacktestEngine:
             if len(self.open_trades) >= self.max_concurrent_trades:
                 continue
 
-            # Calculate RSI up to current point
+            # Calculate RSI and SMA up to current point
             history = data.iloc[:i+1]
             rsi = calculate_rsi(history, length=self.rsi_period)
+            sma = calculate_sma(history, length=self.ma_period) if self.use_trend_filter else None
 
             # Generate signal
-            signal = self._generate_signal(rsi, current_row['Close'], instrument)
+            signal = self._generate_signal(rsi, current_row['Close'], instrument, sma)
 
             if signal and signal != "WAIT":
                 # Enter trade
@@ -181,17 +188,38 @@ class BacktestEngine:
 
         return results
 
-    def _generate_signal(self, rsi: float, price: float, instrument: str) -> str:
+    def _generate_signal(self, rsi: float, price: float, instrument: str, sma: float = None) -> str:
         """
-        Generate trading signal based on RSI.
+        Generate trading signal based on RSI with optional trend filter.
+
+        Args:
+            rsi: Current RSI value
+            price: Current price
+            instrument: Trading pair
+            sma: Simple Moving Average value (optional, for trend filter)
+
+        Returns:
+            "BUY", "SELL", or "WAIT"
 
         Note: In actual strategy, this also uses news sentiment.
         For backtesting, we use only RSI as news historical data is not available.
         """
-        if rsi > self.rsi_overbought:
+        # Determine trend direction
+        in_uptrend = True
+        in_downtrend = True
+
+        if self.use_trend_filter and sma is not None:
+            in_uptrend = price > sma
+            in_downtrend = price < sma
+
+        # Generate signals with trend filter
+        if rsi > self.rsi_overbought and in_downtrend:
+            # Only SELL when RSI overbought AND price below MA (downtrend)
             return "SELL"
-        elif rsi < self.rsi_oversold:
+        elif rsi < self.rsi_oversold and in_uptrend:
+            # Only BUY when RSI oversold AND price above MA (uptrend)
             return "BUY"
+
         return "WAIT"
 
     def _enter_trade(self, instrument: str, trade_type: str, entry_price: float,
