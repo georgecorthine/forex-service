@@ -160,7 +160,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         # Run for specific instrument
         instrument = sys.argv[1].upper()
-        results = run_single_backtest(instrument)
+        single_result = run_single_backtest(instrument)
+        # Wrap single result in a dict for save_results
+        results = {instrument: single_result} if single_result else None
     else:
         # Run for all configured instruments
         results = run_multi_instrument_backtest()
