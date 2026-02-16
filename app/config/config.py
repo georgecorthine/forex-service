@@ -33,21 +33,55 @@ DEFAULT_GRANULARITY = os.getenv("DEFAULT_GRANULARITY", "D")  # D, H4, H1, etc.
 # This allows you to tune the strategy for each pair independently.
 TRADING_PAIRS = {
     "USD_CHF": {
-        "granularity": os.getenv("USD_CHF_GRANULARITY", DEFAULT_GRANULARITY),
+        "granularity": os.getenv("USD_CHF_GRANULARITY", "H4"),
         "rsi_length": 14,
         "overbought": 70,
         "oversold": 30,
-        "ma_period": 50,
-        "use_trend_filter": False,
+        # Trend filter (EMA)
+        "ema_period": 50,
+        "use_trend_filter": True,
+        # MACD confirmation
+        "use_macd_filter": True,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "macd_signal": 9,
+        # ATR-based stops
+        "atr_period": 14,
+        "atr_sl_multiplier": 2.0,
+        # RSI divergence
+        "use_divergence": True,
+        "divergence_lookback": 20,
+        # Trailing stop
+        "use_trailing_stop": True,
+        "trailing_stop_atr_multiplier": 2.0,
+        # Time-based exit (max H4 candles = ~3.3 days)
+        "max_hold_candles": 30,
         "news_query": "USD CHF forex news"
     },
     "GBP_USD": {
-        "granularity": os.getenv("GBP_USD_GRANULARITY", DEFAULT_GRANULARITY),
+        "granularity": os.getenv("GBP_USD_GRANULARITY", "H4"),
         "rsi_length": 14,
         "overbought": 70,
         "oversold": 30,
-        "ma_period": 50,
-        "use_trend_filter": False,
+        # Trend filter (EMA)
+        "ema_period": 50,
+        "use_trend_filter": True,
+        # MACD confirmation
+        "use_macd_filter": True,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "macd_signal": 9,
+        # ATR-based stops
+        "atr_period": 14,
+        "atr_sl_multiplier": 2.0,
+        # RSI divergence
+        "use_divergence": True,
+        "divergence_lookback": 20,
+        # Trailing stop
+        "use_trailing_stop": True,
+        "trailing_stop_atr_multiplier": 2.0,
+        # Time-based exit (max H4 candles = ~3.3 days)
+        "max_hold_candles": 30,
         "news_query": "GBP USD forex news"
     },
     # Removed pairs (poor performance on 1-year backtest):

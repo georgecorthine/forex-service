@@ -50,6 +50,14 @@ class BacktestAnalyzer:
         print(f"   Sharpe Ratio:       {r['sharpe_ratio']:.2f}")
         print()
 
+        # Exit Reasons (if available)
+        if r.get('exit_reasons'):
+            print("🚪 EXIT REASONS")
+            for reason, count in sorted(r['exit_reasons'].items(), key=lambda x: -x[1]):
+                pct = (count / r['total_trades']) * 100
+                print(f"   {reason:15s}  {count:3d} ({pct:.1f}%)")
+            print()
+
         # Performance Assessment
         print("✅ ASSESSMENT")
         self._print_assessment(r)

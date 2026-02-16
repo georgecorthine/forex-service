@@ -1,161 +1,345 @@
-## Forex Trading SME Blueprint (2026 Edition)
+# Forex Trading Fundamentals
 
-### Phase 1: The Foundations & First Principles
-
-* **The 80/20 of Success:** In Forex, 80% of your long-term survival depends on **Risk Management** and **Psychology**, while only 20% depends on your entry/exit strategy.
-* **Mental Models:**
-* **The Zero-Sum Game:** Every dollar you win is a dollar someone else (usually a bank or institution) lost. You aren't "beating the market"; you're competing against entities with better data and faster hardware.
-* **Interest Rate Differentials:** This is the "gravity" of Forex. Capital flows where it earns the most. If you don't understand Central Bank policy (The Fed, ECB, BoJ), you don't understand why the chart is moving.
-* **Expected Value (EV):** Thinking in probabilities, not certainties. An expert understands that a losing trade can still be a "good" trade if it followed a positive EV process.
-
-
-
-### Phase 2: The Current Landscape & Tech Stack (2026)
-
-* **The Tech Stack:** * **Aggregated Data APIs:** Relying on a single broker’s feed is a beginner mistake. Experts use tools like **Finage** or **Ediphy** to aggregate data from multiple venues to see true liquidity.
-* **AI-Enhanced Execution:** Standard platforms (MT4/MT5) are now supplemented with AI co-pilots that provide real-time sentiment analysis and "no-code" algorithmic backtesting.
-
-
-* **Market Leaders:** The "Big Three" remain institutional desks (J.P. Morgan, Citi, HSBC), but the rise of **Project Agorá** (BIS) is rapidly shifting how cross-border settlements occur via distributed ledger technology.
-* **The Unspoken Rule:** "Venue selection" matters as much as the trade. High-level traders know which ECN (Electronic Communication Network) provides the best "fill" during high-volatility events like the NFP (Non-Farm Payrolls).
-
-### Phase 3: Advanced Nuance & Edge Cases
-
-* **Complex Problems:**
-1. **Liquidity Fragmentation:** Solving for "slippage" in a market that is increasingly divided between traditional fiat and tokenized assets.
-2. **Central Bank Intervention:** Navigating "currency wars" where a government intentionally devalues its currency, overriding all technical indicators.
-3. **Algorithmic Noise:** Distinguishing between a genuine trend and "HFT (High-Frequency Trading) bait" meant to trigger retail stop-losses.
-
-
-* **Misconceptions:** Beginners believe the "Holy Grail" indicator exists. Experts know that **indicators are lagging**; they only confirm what price action and volume have already done.
-
-### Phase 4: The Horizon (2026–2030)
-
-* **The AI Super-Cycle:** Trading desks are moving toward fully autonomous, predictive models. The competitive edge is no longer "finding the trend," but "predicting the trend reversal" using machine learning.
-* **Tokenization & CBDCs:** As Central Bank Digital Currencies (CBDCs) roll out, the Forex market will transition to a 24/7/365 settlement cycle, potentially eliminating the "weekend gap" risk.
-* **Quantum Optimization:** Within five years, quantum computing will likely be used to solve complex portfolio optimization problems in real-time, making traditional hedging strategies obsolete.
+A beginner-friendly guide to understanding the foreign exchange market and building a systematic trading approach.
 
 ---
 
-### The Required Reading List (Top 5)
+## 1. What is Forex?
 
-1. ***The Art of Currency Trading* (Brent Donnelly):** The definitive guide on blending macro fundamentals with professional-grade psychology.
-2. ***Trading in the Zone* (Mark Douglas):** Essential for mastering the psychological discipline required to survive a "drawdown."
-3. ***Currency Trading and Intermarket Analysis* (Ashraf Laïdi):** Teaches you how to look at gold, oil, and stocks to predict currency moves.
-4. ***Technical Analysis of the Financial Markets* (John J. Murphy):** The "Bible" of chart patterns—learn it so you know what the rest of the world is looking at.
-5. ***The Alchemy of Finance* (George Soros):** High-level theory on "Reflexivity" and how traders' biases actually change the market fundamentals.
+The **foreign exchange (forex) market** is where currencies are traded against each other. It is the largest financial market in the world, with over $7.5 trillion in daily volume. Unlike stocks, forex operates **24 hours a day, 5 days a week** across major financial centres (London, New York, Tokyo, Sydney).
 
----
+When you trade forex, you are always trading a **currency pair** — buying one currency while simultaneously selling another.
 
-Since you are a **platform engineer**, you have a massive advantage. Most traders fail because they lack the "systems thinking" that you use daily. You don't need to stare at charts; you need to build a high-availability, data-driven pipeline.
+### Currency Pairs Explained
 
----
+A pair like **GBP/USD** has two parts:
 
-## 4-Week "Quant-Engineer" Roadmap
+- **Base currency** (left side) — GBP. This is what you are buying or selling.
+- **Quote currency** (right side) — USD. This is the price you pay.
 
-| Week | Focus | Engineering Objective | AI Integration |
-| --- | --- | --- | --- |
-| **1** | **Data & Infrastructure** | Connect to **OANDA** or **Polygon.io** APIs. Setup a time-series DB (InfluxDB) for OHLC data. | Use LLMs to write boilerplate Python for API ingestion and error handling. |
-| **2** | **Signal Generation** | Learn Technical Analysis (RSI, EMAs) but treat them as "Features" for a model. | Build a **Sentiment Analysis** tool using Llama 3 or GPT-4 to parse "Economic Calendars." |
-| **3** | **Backtesting & Validation** | Run 10 years of data through libraries like `Backtrader` or `Zipline`. | Use AI to perform **Hyperparameter Tuning** to find the optimal Stop-Loss for your engine. |
-| **4** | **Deployment & Ops** | Containerize your bot (Docker). Deploy to AWS/GCP. Setup Grafana alerts. | Implement a "Safety AI" that monitors your bot’s behavior and kills trades if logic drifts. |
+If GBP/USD = 1.2650, it means 1 British pound costs 1.2650 US dollars.
 
----
+- **Buying (going long):** You believe the base currency will strengthen against the quote.
+- **Selling (going short):** You believe the base currency will weaken against the quote.
 
-### Phase 1: The "Engine" (Data Infrastructure)
+### Major, Minor, and Exotic Pairs
 
-Stop thinking about "buying low." Think about **ETL (Extract, Transform, Load)**.
+| Category | Examples | Characteristics |
+|----------|----------|-----------------|
+| **Majors** | EUR/USD, GBP/USD, USD/JPY, USD/CHF | Highest liquidity, tightest spreads, most predictable |
+| **Minors** | EUR/GBP, AUD/NZD, GBP/JPY | Good liquidity, slightly wider spreads |
+| **Exotics** | USD/TRY, EUR/ZAR | Low liquidity, wide spreads, high volatility — avoid as a beginner |
 
-* **The Pipeline:** Use Python to stream data from your broker.
-* **The Storage:** Store data in a way that’s ready for training.
-* **The Latency:** Just like your **0–62 mph in 4.7 seconds**, your execution script needs to be lean. Avoid bloated libraries during the execution phase.
+### Key Terminology
 
----
-
-### Phase 2: Leveraging AI (The Logic)
-
-As a platform engineer, you shouldn't manually trade. Use AI for two specific tasks:
-
-1. **Macro Sentiment Parsing:** Feed the daily "Central Bank" speeches into an LLM. Ask it: *"Is the Fed's tone Hawkish or Dovish? Score from -1 to 1."* This score becomes a variable in your code.
-2. **Pattern Recognition:** Use a Random Forest or XGBoost model to look at the last 100 candles.
-> **Note:** Do not expect AI to predict the future. Use it to calculate the **probability** of a move based on historical data.
-
-
+- **Pip:** The smallest standard price move (0.0001 for most pairs, 0.01 for JPY pairs).
+- **Spread:** The difference between the buy (ask) and sell (bid) price — this is the broker's fee on each trade.
+- **Lot size:** A standard lot is 100,000 units of the base currency. Most retail traders use mini lots (10,000) or micro lots (1,000).
+- **Leverage:** Allows you to control a larger position with a smaller deposit. 30:1 leverage means a $1,000 deposit controls $30,000. Leverage amplifies both profits and losses.
+- **Margin:** The deposit required to open a leveraged position.
 
 ---
 
-### Phase 3: Risk Management (The "Brakes")
+## 2. What Moves Currency Prices?
 
-This is where your DSG and Haldex knowledge applies. Your risk management is the **Quattro** system of your trading—it prevents you from losing traction when the market gets slippery.
+Currency prices are driven by two broad categories: **fundamentals** (the "why") and **technicals** (the "when").
 
-* **Position Sizing:** Never risk more than 1% of your account.
-* **The Formula:** 
+### Fundamental Drivers
 
-* **The Kill Switch:** As an engineer, you know about "Circuit Breakers." If your bot loses 3% in a day, the script should automatically revoke its own API keys.
+These are the underlying economic forces that determine a currency's value over weeks and months.
 
----
+**Interest Rates (The Single Most Important Factor)**
 
-### Recommended "Tech Stack" for You:
+Central banks (The Fed, ECB, BoE, BoJ) set interest rates. Higher rates attract foreign capital because investors earn more on deposits in that currency. When a central bank raises rates, its currency typically strengthens.
 
-* **Language:** Python (for data/AI) or Go (for low-latency execution).
-* **Libraries:** `Pandas`, `NumPy`, `Scikit-learn`, `Backtrader`.
-* **Cloud:** AWS Lambda (for event-driven trades) or a small EC2 instance running Docker.
-* **Monitoring:** Grafana (to watch your equity curve in real-time).
+- **Hawkish** = Central bank signals rate increases (bullish for the currency)
+- **Dovish** = Central bank signals rate cuts (bearish for the currency)
 
+**Economic Data**
 
-[Renko Trading Bot Build: Complete Python Trading System Course](https://www.youtube.com/watch?v=0Lmqh1X_Mb0)
+Key releases that move markets:
 
-This video is highly relevant because it walks through the exact "engineering experience" of building a trading bot in Python, covering the transition from data to deployment which matches your professional background.
+| Release | Why It Matters |
+|---------|---------------|
+| **Non-Farm Payrolls (NFP)** | Monthly US jobs report — the single most volatile scheduled event |
+| **CPI (Inflation)** | High inflation forces rate hikes; low inflation enables cuts |
+| **GDP Growth** | Measures overall economic health |
+| **PMI (Purchasing Managers Index)** | Leading indicator of economic expansion or contraction |
+| **Retail Sales** | Consumer spending drives most economies |
 
----
+**Geopolitics and Risk Sentiment**
 
-That breakdown is spot on—you’ve nailed the "Base vs. Quote" logic. As a **platform engineer**, think of the **Base Currency** as the **Server** and the **Quote Currency** as the **Resource Cost**. If the "cost" (Price) goes up, the "Server" (Base) is becoming more expensive/valuable relative to the "Resource."
+- In times of uncertainty, traders buy "safe havens" — USD, CHF, JPY, and gold.
+- In calm/optimistic markets, traders sell safe havens and buy "risk currencies" — AUD, NZD, GBP.
 
-Since you want to build this into an **AI-assisted secondary income stream**, let’s look at how we convert that RSI and Price logic into a "Microservice" for your trading bot.
+### Technical Drivers
 
----
+Technical analysis studies **price charts and patterns** to identify trading opportunities. The idea is that price movements are not random — they reflect the collective behaviour of all market participants, and those patterns tend to repeat.
 
-## Integrating RSI & Price Logic into your Stack
-
-In your current context, **RSI (Relative Strength Index)** is your **System Health Monitor**.
-
-* **RSI 70+ (Overbought):** The "CPU" is redlining; the trend is likely overextended and due for a cooldown (Price drop).
-* **RSI 30- (Oversold):** The "Traffic" has bottomed out; the asset is undervalued and likely due for a "reboot" (Price spike).
-* **RSI 41.16:** This is a "Stable Load." It tells your AI: *"No extreme momentum detected; wait for a confluence of other data points."*
-
----
-
-## Your First Engineering Task: The Sentiment Microservice
-
-Since you want to leverage AI, your next step is building a **Sentiment Analysis Engine**. This will sit "upstream" of your execution logic.
-
-### The Workflow:
-
-1. **Ingestion:** Scrape the "Economic Calendar" (e.g., ForexFactory API) for high-impact news (Red Folder events).
-2. **LLM Processing:** Pass the text of a Central Bank statement to an LLM (GPT-4o or Claude 3.5).
-3. **Scoring:** Instruct the AI to output a JSON object:
-`{"pair": "EURUSD", "sentiment_score": 0.8, "bias": "Bullish"}`.
-4. **Logic Gate:** Your Python script only executes a "Buy" if:
-* **Price Action:** RSI is < 40 (leaning oversold).
-* **AI Sentiment:** Score is > 0.5 (Bullish).
-
-
+> **Important:** Indicators are tools, not crystal balls. They describe what price has already done and give you a framework for deciding what might happen next. No single indicator works in isolation.
 
 ---
 
-## Strategy for a Secondary Income Engine
+## 3. Technical Analysis — The Core Indicators
 
-As someone with an **Audi S3 8V**, you know that performance requires precision tuning. In Forex, "Tuning" is **Backtesting**.
+These are the indicators most commonly used in forex trading and the ones used by this trading service.
 
-### 1. The "Sandbox" Environment
+### RSI (Relative Strength Index)
 
-Before deploying your bot to a "Production" account, you must run it in a **Paper Trading (Demo)** environment. Treat this exactly like a **Staging Environment** in your day job.
+**What it does:** Measures the speed and magnitude of recent price changes on a scale of 0–100. It tells you whether a pair has been bought or sold aggressively in the recent past.
 
-* **Target:** 30 days of consistent 1-2% growth.
-* **Metric:** Look for the **Sharpe Ratio** (Risk-adjusted return). If it's below 1.0, your "engine" is inefficient.
+- **Above 70** = Overbought. The pair has risen a lot recently and may be due for a pullback.
+- **Below 30** = Oversold. The pair has fallen a lot recently and may be due for a bounce.
+- **Between 30–70** = Neutral territory.
 
-### 2. Risk Management (The Circuit Breaker)
+**Common mistake:** Buying just because RSI is oversold (or selling because it's overbought). In a strong trend, RSI can stay overbought or oversold for a long time. RSI works best as a **pullback indicator within a confirmed trend**, not as a standalone reversal signal.
 
-Add a "Hard Stop" in your code. If your API sees a loss greater than your defined threshold (e.g., 2% of total equity), it should trigger a `sys.exit()` or a function to close all open orders immediately.
+**Practical use:** In an uptrend, look for RSI dipping below 40–45 as a buying opportunity (a temporary pullback in an otherwise rising market).
+
+### EMA (Exponential Moving Average)
+
+**What it does:** Smooths out price data to show the overall direction of a trend. The EMA gives more weight to recent prices, making it more responsive than a Simple Moving Average (SMA).
+
+- **Price above EMA** = Uptrend. Favour buy trades.
+- **Price below EMA** = Downtrend. Favour sell trades.
+
+**Common periods:** EMA 50 (medium-term trend) and EMA 200 (long-term trend).
+
+**Practical use:** Use the EMA as a **trend filter**. Only take buy signals when price is above the EMA, and sell signals when price is below. This keeps you aligned with the dominant market direction.
+
+### MACD (Moving Average Convergence Divergence)
+
+**What it does:** Shows the relationship between two EMAs (typically 12 and 26 period). It produces three outputs:
+
+- **MACD line:** The difference between the fast EMA and slow EMA.
+- **Signal line:** A 9-period EMA of the MACD line.
+- **Histogram:** The difference between the MACD line and signal line — shows momentum visually.
+
+**How to read it:**
+
+- Histogram above zero and growing = bullish momentum increasing.
+- Histogram below zero and shrinking = bearish momentum increasing.
+- Histogram changing direction = momentum is shifting.
+
+**Practical use:** Use MACD as a **confirmation filter**. When your other indicators suggest a trade, check that MACD agrees before entering.
+
+### ATR (Average True Range)
+
+**What it does:** Measures market volatility — how much a pair typically moves per candle. It does NOT indicate direction, only the size of price movements.
+
+**Why it matters:** ATR tells you how far to set your stop-loss. A pair that moves 80 pips per candle needs a wider stop than one that moves 20 pips. Using a fixed stop-loss distance ignores this reality and either gets you stopped out by normal noise or leaves your stop too far away.
+
+**Practical use:** Set your stop-loss as a multiple of ATR (e.g., 2x ATR). This adapts automatically to current market conditions.
+
+### RSI Divergence
+
+**What it does:** Identifies when price and RSI are moving in opposite directions, which can signal that a trend is losing momentum.
+
+- **Bullish divergence:** Price makes a lower low, but RSI makes a higher low. Suggests selling pressure is weakening.
+- **Bearish divergence:** Price makes a higher high, but RSI makes a lower high. Suggests buying pressure is weakening.
+
+**Practical use:** Divergence is a warning sign, not an automatic entry. Combine it with other confirmation signals before acting.
 
 ---
+
+## 4. Timeframes
+
+Forex charts can be viewed at different timeframes, from 1-minute candles to monthly candles. Each candle represents one period of that timeframe.
+
+| Timeframe | Candle Duration | Candles/Year | Typical Use |
+|-----------|----------------|-------------|-------------|
+| M15 | 15 minutes | ~35,000 | Scalping, day trading |
+| H1 | 1 hour | ~8,760 | Intraday trading |
+| **H4** | **4 hours** | **~2,190** | **Swing trading (good balance of signal quality and frequency)** |
+| D | 1 day | ~260 | Position trading |
+| W | 1 week | ~52 | Long-term trend analysis |
+
+**Key principle:** Higher timeframes produce more reliable signals but fewer trades. Lower timeframes produce more trades but more noise (false signals). H4 is a practical middle ground — enough candles for statistical significance, but filtered enough to avoid most noise.
+
+---
+
+## 5. Risk Management
+
+Risk management is the single most important skill in trading. A mediocre strategy with excellent risk management will outperform a brilliant strategy with poor risk management every time.
+
+### The 1% Rule
+
+Never risk more than **1% of your total account** on a single trade. This means if you have a $10,000 account, the maximum you should lose on any trade is $100.
+
+**Why 1%?** Even with a string of 10 consecutive losses (which will happen eventually), you only lose roughly 10% of your account — painful but recoverable. At 5% risk per trade, 10 losses wipes out half your account.
+
+### Position Sizing Formula
+
+```
+Position Size = (Account Balance * Risk %) / (Stop-Loss Distance in Pips * Pip Value)
+```
+
+Example: $10,000 account, 1% risk ($100), 50-pip stop-loss, pip value of $1 (mini lot):
+- Position size = $100 / (50 * $1) = 2 mini lots
+
+### Stop-Loss and Take-Profit
+
+Every trade must have a pre-defined exit plan before you enter.
+
+- **Stop-Loss (SL):** The price at which you accept you were wrong and close the trade for a small, controlled loss. Never move your stop-loss further away from entry.
+- **Take-Profit (TP):** The price at which you lock in your gain.
+- **Risk-Reward Ratio:** The relationship between your potential loss and potential gain. A 1:2 ratio means you risk $100 to potentially gain $200. With a 1:2 ratio, you only need to win 34% of trades to break even.
+
+### Dynamic Stops Using ATR
+
+Rather than using a fixed percentage (e.g., 0.5%) for every trade, set stops based on current volatility:
+
+- **Stop-loss** = Entry price +/- (ATR * multiplier, e.g., 2.0)
+- **Take-profit** = Stop distance * reward ratio (e.g., 2.0)
+
+This ensures your stops respect actual market movement. In quiet markets, stops are tighter. In volatile markets, stops are wider.
+
+### Trailing Stops
+
+A trailing stop moves your stop-loss in the direction of profit as the trade moves in your favour. This lets winning trades run while locking in gains. A sensible approach: only activate the trailing stop once the trade has moved at least 1:1 in your favour (past breakeven).
+
+### Time-Based Exits
+
+If a trade has been open for an extended period without hitting either the stop-loss or take-profit, it may be best to close it. Dead trades tie up capital that could be used elsewhere.
+
+---
+
+## 6. Building a Trading Strategy
+
+A profitable strategy does not require complex indicators or secret formulas. It requires **clear rules, consistent execution, and disciplined risk management**.
+
+### The Multi-Indicator Approach
+
+No single indicator gives reliable signals on its own. The strongest setups occur when multiple independent indicators agree. A practical framework:
+
+1. **Trend filter** (EMA) — Determines the market direction. Only trade with the trend.
+2. **Entry trigger** (RSI pullback) — Identifies a temporary dip within the trend.
+3. **Momentum confirmation** (MACD) — Confirms that momentum supports the trade direction.
+4. **Volatility-adjusted stops** (ATR) — Sets realistic stop-loss levels.
+
+**Example — Trend Pullback Buy Signal:**
+- Price is above the 50-period EMA (confirmed uptrend)
+- RSI has pulled back below 45 (temporary weakness in the uptrend)
+- MACD histogram is positive or turning upward (momentum supports the move)
+- Stop-loss set at 2x ATR below entry
+
+This approach works because you are trading **with the trend** and entering on **temporary weakness** — buying the dip in a market that is broadly rising.
+
+### Backtesting
+
+Before risking real money, test your strategy against historical data. Backtesting tells you how your rules would have performed in the past.
+
+**Key metrics to evaluate:**
+
+| Metric | What It Tells You | Healthy Target |
+|--------|-------------------|---------------|
+| **Win Rate** | Percentage of trades that are profitable | >= 50% |
+| **Profit Factor** | Gross profit / gross loss | >= 1.5 |
+| **Sharpe Ratio** | Risk-adjusted return (higher = better return per unit of risk) | >= 0.5 |
+| **Max Drawdown** | Largest peak-to-trough decline | <= 20% |
+| **Total Return** | Net profit/loss over the period | Positive |
+
+**Important:** Past performance does not guarantee future results, but a strategy that fails in backtesting will almost certainly fail in live trading.
+
+### Demo Trading
+
+After backtesting, run your strategy on a **demo account** with simulated money for at least 2-4 weeks. This validates that your system works in real-time market conditions and builds confidence before committing real capital.
+
+---
+
+## 7. Trading Psychology
+
+Psychology is the reason most traders fail despite having viable strategies.
+
+### Common Psychological Traps
+
+- **Revenge trading:** Taking impulsive trades after a loss to "win it back." This leads to oversized positions and further losses.
+- **Moving your stop-loss:** When a trade moves against you, the temptation is to widen the stop and "give it more room." This turns small losses into large ones.
+- **Overtrading:** Taking trades that don't meet your criteria because you feel like you should be doing something. The best traders spend most of their time waiting.
+- **Recency bias:** Changing your entire strategy after 2-3 losing trades. A strategy with a 55% win rate will regularly produce losing streaks of 5+ trades — that is statistically normal.
+
+### The Right Mindset
+
+- **Think in probabilities:** Any single trade is meaningless. What matters is the outcome over 50-100 trades. A loss is not a failure if you followed your rules.
+- **Process over outcome:** A losing trade executed according to plan is better than a winning trade taken on impulse. The winning impulse trade reinforces bad habits.
+- **Accept losses as a business cost:** Every business has expenses. In trading, losses are the cost of doing business. The goal is to keep costs (losses) small and consistent.
+
+---
+
+## 8. News and Sentiment
+
+Fundamental analysis complements technical analysis by giving context to why a market is moving.
+
+### High-Impact Events
+
+Certain economic releases cause sharp, immediate price movements. The most important:
+
+- **Central bank rate decisions** — The most impactful single events in forex.
+- **Non-Farm Payrolls (NFP)** — Released first Friday of every month. Expect high volatility for USD pairs.
+- **CPI (inflation data)** — Directly influences rate expectations.
+
+**Practical approach:** Either avoid trading during high-impact news (close positions beforehand) or use news sentiment as an additional confirmation filter.
+
+### Sentiment Analysis
+
+Market sentiment reflects whether traders are broadly optimistic or pessimistic about a currency. Sources of sentiment data include:
+
+- Central bank speeches and meeting minutes
+- Economic calendar releases
+- Financial news headlines
+
+Sentiment can be scored numerically (e.g., -1 to +1, bearish to bullish) and used as a filter: only take a buy trade if sentiment is positive, and vice versa.
+
+---
+
+## 9. Practical Checklist for New Traders
+
+1. **Learn the basics** — Understand pairs, pips, lots, leverage, and margin before placing any trade.
+2. **Pick 1-2 major pairs** — Focus on learning the behaviour of a small number of pairs rather than spreading attention across many.
+3. **Choose a timeframe** — H4 is a good starting point for most people. It does not require constant screen time.
+4. **Define your strategy rules** — Write them down. Entry criteria, exit criteria, position size, maximum risk per trade.
+5. **Backtest** — Run your rules against at least 12 months of historical data.
+6. **Demo trade** — Practice in a risk-free environment until you are consistently following your rules.
+7. **Start small** — When transitioning to live trading, use the smallest position size available. The goal is to prove the system works with real money, not to make big profits immediately.
+8. **Keep a trading journal** — Record every trade: why you entered, what happened, and what you learned. Review weekly.
+9. **Never risk more than 1%** — This is non-negotiable.
+10. **Be patient** — Profitable trading is boring. If it feels exciting, you are probably doing something wrong.
+
+---
+
+## 10. Recommended Reading
+
+| Book | Author | Focus |
+|------|--------|-------|
+| *The Art of Currency Trading* | Brent Donnelly | Blending macro fundamentals with professional-grade psychology |
+| *Trading in the Zone* | Mark Douglas | Mastering the psychological discipline required to survive drawdowns |
+| *Currency Trading and Intermarket Analysis* | Ashraf Laidi | Understanding how gold, oil, and stocks influence currency moves |
+| *Technical Analysis of the Financial Markets* | John J. Murphy | The comprehensive reference for chart patterns and indicators |
+| *The Alchemy of Finance* | George Soros | Advanced theory on market reflexivity and how trader behaviour shapes fundamentals |
+
+---
+
+## Glossary
+
+| Term | Definition |
+|------|-----------|
+| **Ask** | The price at which you can buy (the broker's selling price) |
+| **Bid** | The price at which you can sell (the broker's buying price) |
+| **Spread** | The difference between bid and ask — the broker's fee |
+| **Pip** | The smallest standard price increment (0.0001 for most pairs) |
+| **Lot** | A standardised trade size (standard = 100,000, mini = 10,000, micro = 1,000 units) |
+| **Leverage** | Borrowed capital that amplifies your position size |
+| **Margin** | The deposit required to maintain a leveraged position |
+| **Long** | Buying the base currency (expecting it to rise) |
+| **Short** | Selling the base currency (expecting it to fall) |
+| **Stop-Loss (SL)** | An order to automatically close a losing trade at a pre-defined price |
+| **Take-Profit (TP)** | An order to automatically close a winning trade at a pre-defined price |
+| **Drawdown** | The decline from a peak account balance to a trough |
+| **Slippage** | The difference between expected and actual execution price |
+| **Liquidity** | How easily a pair can be traded without moving the price |
+| **Volatility** | How much a pair's price fluctuates over a given period |
+| **Hawkish** | Central bank stance favouring higher interest rates |
+| **Dovish** | Central bank stance favouring lower interest rates |
+| **Risk-Reward Ratio** | The potential profit relative to potential loss on a trade |
+| **Sharpe Ratio** | A measure of risk-adjusted return |
+| **Profit Factor** | Total gross profit divided by total gross loss |

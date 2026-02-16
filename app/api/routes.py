@@ -81,15 +81,18 @@ async def get_trade_instruction(instrument: str):
         "take_profit": 0.0
     }
 
+    # Get ATR from state if available (for dynamic stops)
+    atr = data.get("atr")
+
     if "BUY" in sentiment:
-        # Calculate trade levels with risk management
         levels = calculate_trade_levels(
             entry_price=price,
             trade_type="BUY",
             instrument=instrument,
             risk_percentage=risk_percentage,
             reward_ratio=reward_ratio,
-            account_balance=account_balance
+            account_balance=account_balance,
+            atr=atr,
         )
         trade_setup["type"] = "BUY"
         trade_setup["entry"] = round(levels["entry"], precision)
@@ -97,14 +100,14 @@ async def get_trade_instruction(instrument: str):
         trade_setup["take_profit"] = levels["take_profit"]
 
     elif "SELL" in sentiment:
-        # Calculate trade levels with risk management
         levels = calculate_trade_levels(
             entry_price=price,
             trade_type="SELL",
             instrument=instrument,
             risk_percentage=risk_percentage,
             reward_ratio=reward_ratio,
-            account_balance=account_balance
+            account_balance=account_balance,
+            atr=atr,
         )
         trade_setup["type"] = "SELL"
         trade_setup["entry"] = round(levels["entry"], precision)

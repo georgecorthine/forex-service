@@ -27,17 +27,6 @@ def run_single_backtest(instrument: str,
                        count: int = None):
     """
     Run backtest for a single instrument.
-
-    Args:
-        instrument: Trading pair (e.g., "EUR_USD")
-        initial_balance: Starting balance
-        risk_percentage: Risk per trade (%)
-        reward_ratio: Reward-to-risk ratio
-        granularity: Data granularity
-        count: Number of candles
-
-    Returns:
-        Dictionary with backtest results
     """
     logger.info(f"\n{'='*80}")
     logger.info(f"BACKTESTING: {instrument}")
@@ -52,9 +41,9 @@ def run_single_backtest(instrument: str,
     # Auto-calculate count for 1 year based on granularity
     if count is None:
         if granularity == "H4":
-            count = 2190  # ~6 candles/day × 365 days
+            count = 2190  # ~6 candles/day * 365 days
         elif granularity == "H1":
-            count = 8760  # ~24 candles/day × 365 days
+            count = 8760  # ~24 candles/day * 365 days
         elif granularity == "D":
             count = 365  # 1 year of daily candles
         else:
@@ -69,21 +58,28 @@ def run_single_backtest(instrument: str,
         logger.error(f"Failed to fetch data: {e}")
         return None
 
-    rsi_overbought = config.get("overbought", 70)
-    rsi_oversold = config.get("oversold", 30)
-    ma_period = config.get("ma_period", 200)
-    use_trend_filter = config.get("use_trend_filter", False)
-
-    # Run backtest
+    # Run backtest with all config parameters
     logger.info("Step 2: Running backtest...")
     engine = BacktestEngine(
         initial_balance=initial_balance,
         risk_percentage=risk_percentage,
         reward_ratio=reward_ratio,
-        rsi_overbought=rsi_overbought,
-        rsi_oversold=rsi_oversold,
-        ma_period=ma_period,
-        use_trend_filter=use_trend_filter
+        rsi_overbought=config.get("overbought", 70),
+        rsi_oversold=config.get("oversold", 30),
+        # Enhanced indicators from config
+        ema_period=config.get("ema_period", 50),
+        use_trend_filter=config.get("use_trend_filter", True),
+        use_macd_filter=config.get("use_macd_filter", True),
+        macd_fast=config.get("macd_fast", 12),
+        macd_slow=config.get("macd_slow", 26),
+        macd_signal=config.get("macd_signal", 9),
+        atr_period=config.get("atr_period", 14),
+        atr_sl_multiplier=config.get("atr_sl_multiplier", 1.5),
+        use_divergence=config.get("use_divergence", True),
+        divergence_lookback=config.get("divergence_lookback", 20),
+        use_trailing_stop=config.get("use_trailing_stop", True),
+        trailing_stop_atr_multiplier=config.get("trailing_stop_atr_multiplier", 2.0),
+        max_hold_candles=config.get("max_hold_candles", 20),
     )
 
     results = engine.run(data, instrument)
@@ -104,17 +100,6 @@ def run_multi_instrument_backtest(instruments: list = None,
                                   count: int = None):
     """
     Run backtest for multiple instruments and aggregate results.
-
-    Args:
-        instruments: List of trading pairs (if None, uses all from config)
-        initial_balance: Starting balance
-        risk_percentage: Risk per trade (%)
-        reward_ratio: Reward-to-risk ratio
-        granularity: Data granularity
-        count: Number of candles
-
-    Returns:
-        Dictionary with aggregated results
     """
     if instruments is None:
         instruments = list(TRADING_PAIRS.keys())

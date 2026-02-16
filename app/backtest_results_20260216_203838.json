@@ -1,0 +1,43 @@
+{
+  "USD_CHF": {
+    "initial_balance": 10000.0,
+    "final_balance": 10080.847937280165,
+    "total_return": 80.84793728016484,
+    "total_return_pct": 0.8084793728016484,
+    "total_trades": 3,
+    "winning_trades": 1,
+    "losing_trades": 2,
+    "win_rate": 33.33333333333333,
+    "avg_win": 1.9792556436851751,
+    "avg_loss": -0.5750940165777372,
+    "profit_factor": 1.7208104993539202,
+    "max_drawdown": 0.9175349731652535,
+    "sharpe_ratio": 0.22355852701325565,
+    "exit_reasons": {
+      "TRAILING": 1,
+      "TIME": 1,
+      "SL": 1
+    },
+    "num_trades": 3
+  },
+  "GBP_USD": {
+    "initial_balance": 10000.0,
+    "final_balance": 9454.74984055666,
+    "total_return": -545.2501594433397,
+    "total_return_pct": -5.452501594433397,
+    "total_trades": 7,
+    "winning_trades": 0,
+    "losing_trades": 7,
+    "win_rate": 0.0,
+    "avg_win": 0,
+    "avg_loss": -0.7969572230280902,
+    "profit_factor": 0.0,
+    "max_drawdown": 5.452501594433397,
+    "sharpe_ratio": -1.9828598776605564,
+    "exit_reasons": {
+      "TRAILING": 3,
+      "SL": 4
+    },
+    "num_trades": 7
+  }
+}
