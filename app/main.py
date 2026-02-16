@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import asyncio
 import logging
 import warnings
+import os
 from bs4 import XMLParsedAsHTMLWarning
 from utils.store import state
 from utils.engine import trading_engine_loop
@@ -45,9 +46,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Configure CORS - use environment variable for allowed origins
+# Set ALLOWED_ORIGINS="http://localhost:3000,https://yourdomain.com" in production
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins (for development)
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

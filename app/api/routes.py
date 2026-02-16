@@ -6,7 +6,9 @@ from utils.store import state
 from config.config import TRADING_PAIRS
 from models.model import RSIUpdate, AllPairsData, ActiveSignals, PairData, TradeInstruction
 from utils.engine import trading_engine_loop
+from utils.risk_management import calculate_trade_levels
 import asyncio
+import os
 
 router = APIRouter()
 
@@ -55,17 +57,22 @@ async def get_pair_data(instrument: str):
 
 @router.get("/api/trade/{instrument}", response_model=TradeInstruction)
 async def get_trade_instruction(instrument: str):
-    """Generate specific MT5 trade instructions based on the latest signal."""
+    """Generate specific OANDA trade instructions based on the latest signal with proper risk management."""
     if instrument not in state["latest_signal"]:
         raise HTTPException(status_code=404, detail="Instrument data not available.")
-    
+
     data = state["latest_signal"][instrument]
     price = data["price"]
     sentiment = data["sentiment"]
-    
+
+    # Get account balance and risk settings from environment (with defaults)
+    account_balance = float(os.getenv("ACCOUNT_BALANCE", "10000.0"))
+    risk_percentage = float(os.getenv("RISK_PERCENTAGE", "1.0"))
+    reward_ratio = float(os.getenv("REWARD_RATIO", "2.0"))
+
     # Determine precision (JPY pairs use 3 decimals, others 5)
     precision = 3 if "JPY" in instrument else 5
-    
+
     trade_setup = {
         "instrument": instrument,
         "type": "WAIT",
@@ -75,13 +82,34 @@ async def get_trade_instruction(instrument: str):
     }
 
     if "BUY" in sentiment:
+        # Calculate trade levels with risk management
+        levels = calculate_trade_levels(
+            entry_price=price,
+            trade_type="BUY",
+            instrument=instrument,
+            risk_percentage=risk_percentage,
+            reward_ratio=reward_ratio,
+            account_balance=account_balance
+        )
         trade_setup["type"] = "BUY"
-        trade_setup["stop_loss"] = round(price * 0.995, precision)  # 0.5% Risk
-        trade_setup["take_profit"] = round(price * 1.01, precision) # 1.0% Reward
+        trade_setup["entry"] = round(levels["entry"], precision)
+        trade_setup["stop_loss"] = levels["stop_loss"]
+        trade_setup["take_profit"] = levels["take_profit"]
+
     elif "SELL" in sentiment:
+        # Calculate trade levels with risk management
+        levels = calculate_trade_levels(
+            entry_price=price,
+            trade_type="SELL",
+            instrument=instrument,
+            risk_percentage=risk_percentage,
+            reward_ratio=reward_ratio,
+            account_balance=account_balance
+        )
         trade_setup["type"] = "SELL"
-        trade_setup["stop_loss"] = round(price * 1.005, precision)
-        trade_setup["take_profit"] = round(price * 0.99, precision)
+        trade_setup["entry"] = round(levels["entry"], precision)
+        trade_setup["stop_loss"] = levels["stop_loss"]
+        trade_setup["take_profit"] = levels["take_profit"]
 
     return trade_setup
 

@@ -4,7 +4,7 @@
 from collections import defaultdict
 import asyncio
 import logging
-from utils.store import state
+from utils.store import state, state_lock
 from config.config import TRADING_PAIRS
 from utils.indicators import calculate_rsi
 from utils.oanda_client import OandaClient
@@ -77,7 +77,9 @@ async def trading_engine_loop():
 
         except Exception as e:
             logger.error(f"Error in trading loop: {e}")
-            state["errors"].append(str(e))
+            async with state_lock:
+                state["errors"].append(str(e))
+                state["error_counts"]["trading_loop"] += 1
             await asyncio.sleep(60) # Prevent rapid error loops
 
 async def analyze_instrument(instrument:str, config:dict, loop):
@@ -112,18 +114,22 @@ async def analyze_instrument(instrument:str, config:dict, loop):
 
             logger.info(f"Analysis [{instrument}]: Price={current_price:.5f} | RSI={rsi:.2f} (Sentiment: {base_sentiment}) | News Score={avg_sentiment:.3f} | Final Signal: {final_sentiment}")
 
-            # Update global state so we can see it via API/Swagger
-            state["latest_signal"][instrument] = {
-                "price": current_price,
-                "rsi": rsi,
-                "sentiment": final_sentiment,
-                "news_sentiment_score": avg_sentiment,
-                "timestamp": str(history.index[-1]) if history is not None and not history.empty else None,  # Ensure index exists
-            }
+            # Update global state with lock to prevent race conditions
+            async with state_lock:
+                state["latest_signal"][instrument] = {
+                    "price": current_price,
+                    "rsi": rsi,
+                    "sentiment": final_sentiment,
+                    "news_sentiment_score": avg_sentiment,
+                    "timestamp": str(history.index[-1]) if history is not None and not history.empty else None,
+                }
+
             _save_signal_sync(instrument, final_sentiment, current_price, rsi, avg_sentiment)
     except Exception as e:
         logger.exception(f"Error analyzing instrument {instrument}: {e}")
-        state["errors"].append(str(e))
+        async with state_lock:
+            state["errors"].append(f"{instrument}: {str(e)}")
+            state["error_counts"][instrument] += 1
         instrument_failures[instrument] += 1
     finally:
         await asyncio.sleep(60)

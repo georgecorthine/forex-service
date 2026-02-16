@@ -13,9 +13,9 @@ from telegram.ext import Defaults
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-# The URL of your local FastAPI service
-API_URL = "http://localhost:8000/api"
-CHECK_HOUR = 14  # Hour to check for signals (UTC) - Example: 2 PM UTC
+# The URL of your FastAPI service (can be configured via environment variable)
+API_URL = os.getenv("API_URL", "http://localhost:8000/api")
+CHECK_HOUR = int(os.getenv("CHECK_HOUR", "14"))  # Hour to check for signals (UTC)
 
 # Configure logging
 logging.basicConfig(
@@ -23,6 +23,20 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger("telegram_bot")
+
+# Validation helper
+def validate_pair_format(pair: str) -> bool:
+    """Validate forex pair format (e.g., EUR_USD)."""
+    if not pair:
+        return False
+    parts = pair.split("_")
+    if len(parts) != 2:
+        return False
+    if len(parts[0]) != 3 or len(parts[1]) != 3:
+        return False
+    if not parts[0].isalpha() or not parts[1].isalpha():
+        return False
+    return True
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a welcome message when the command /start is issued."""
@@ -75,6 +89,12 @@ async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     pair = context.args[0].upper()
+
+    # Validate pair format
+    if not validate_pair_format(pair):
+        await update.message.reply_text("❌ Invalid pair format. Use format: EUR_USD")
+        return
+
     display_pair = pair.replace("_", "\\_")
 
     async with httpx.AsyncClient() as client:
@@ -128,6 +148,12 @@ async def trade(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     pair = context.args[0].upper()
+
+    # Validate pair format
+    if not validate_pair_format(pair):
+        await update.message.reply_text("❌ Invalid pair format. Use format: EUR_USD")
+        return
+
     display_pair = pair.replace("_", "\\_")
 
     async with httpx.AsyncClient() as client:
@@ -172,6 +198,18 @@ async def set_rsi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         overbought = int(context.args[1])
         oversold = int(context.args[2])
+
+        # Validate RSI ranges
+        if not (0 <= oversold <= 100):
+            await update.message.reply_text("❌ Oversold value must be between 0-100")
+            return
+        if not (0 <= overbought <= 100):
+            await update.message.reply_text("❌ Overbought value must be between 0-100")
+            return
+        if oversold >= overbought:
+            await update.message.reply_text("❌ Oversold must be less than overbought")
+            return
+
     except ValueError:
         await update.message.reply_text("❌ Thresholds must be integers.")
         return
@@ -331,13 +369,9 @@ def main():
             f"API version {TG_VER}. Please upgrade to version 20.0 or higher."
         )
 
+    # Create the Application with defaults and post_init
     defaults = Defaults(parse_mode=ParseMode.MARKDOWN)
-    # Build application and store the bot object for post_init
-    application = Application.builder().token(BOT_TOKEN).defaults(defaults).build()
-
-
-    # Create the Application
-    application = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
+    application = Application.builder().token(BOT_TOKEN).defaults(defaults).post_init(post_init).build()
 
     # Add Handlers
     application.add_handler(CommandHandler("start", start))

@@ -1,23 +1,16 @@
-# Stage 2: Build the final image with Python backend and static frontend
+# Build the final image with Python backend
 FROM python:3.12-slim-bookworm
 
 # Set the working directory inside the container
 WORKDIR /app
 
 # Install Python dependencies
-COPY requirements.txt ./
+COPY app/requirements.txt ./
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the Python backend code
-COPY main.py .
-COPY api ./api
-COPY yfinance_client.py .
-COPY config.py .
-COPY indicators.py .
-
-# Copy the main application
-COPY main.py ./
+# Copy the application code
+COPY app/ ./
 
 # Expose port 8000 to allow communication to the app
 EXPOSE 8000

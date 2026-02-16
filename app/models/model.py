@@ -7,19 +7,24 @@ from typing import List, Dict
 class PeeweeBaseModel(pw.Model):
     """A Peewee base model that uses our SQLite database."""
     class Meta:
-        # set constraints and indexes
-        indexes = (('instrument', 'timestamp'), True) # creates a unique index
         database = db
 
 class SignalHistory(PeeweeBaseModel):
     """Represents a historical record of a generated signal."""
-    timestamp = pw.DateTimeField(default=datetime.datetime.now)
-    instrument = pw.CharField()
+    timestamp = pw.DateTimeField(default=datetime.datetime.now, index=True)
+    instrument = pw.CharField(index=True)
     sentiment = pw.CharField()
     price = pw.FloatField()
 
     rsi = pw.FloatField()
     news_sentiment_score = pw.FloatField(default=0.0)
+
+    class Meta:
+        database = db
+        # Composite index for common queries (instrument + timestamp)
+        indexes = (
+            (('instrument', 'timestamp'), False),  # Non-unique composite index
+        )
 
 # --- Pydantic Models for API validation ---
 
