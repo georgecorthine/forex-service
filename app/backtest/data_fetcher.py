@@ -63,44 +63,49 @@ class BacktestDataFetcher:
 
     def _fetch_paginated(self, instrument: str, granularity: str, count: int) -> pd.DataFrame:
         """
-        Fetch more than 5000 candles by paginating with date ranges.
-        Works backwards from now in chunks of 5000 candles.
+        Fetch more than 5000 candles by paginating backwards.
+        Uses 'to' + 'count' per chunk, stepping back via the oldest timestamp returned.
         """
-        hours_per_candle = GRANULARITY_HOURS.get(granularity, 24)
-        chunk_duration = timedelta(hours=hours_per_candle * 5000)
-
         logger.info(f"Paginated fetch: {count} {granularity} candles for {instrument}")
 
         all_chunks = []
-        to_time = datetime.utcnow()
+        # Start from now, work backwards
+        to_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         remaining = count
+        max_iterations = 20  # Safety limit
 
-        while remaining > 0:
-            from_time = to_time - chunk_duration
-            from_str = from_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-            to_str = to_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        for _ in range(max_iterations):
+            chunk_size = min(remaining, 5000)
 
-            logger.info(f"  Fetching chunk: {from_str} to {to_str}")
+            logger.info(f"  Fetching {chunk_size} candles ending at {to_time}")
 
             chunk = self.client.get_history_range(
                 instrument=instrument,
-                from_time=from_str,
-                to_time=to_str,
+                from_time=None,
+                to_time=to_time,
                 granularity=granularity,
+                count=chunk_size,
             )
 
             if chunk is None or chunk.empty:
-                logger.warning(f"  No data for chunk ending {to_str}, stopping pagination")
+                logger.warning(f"  No data for chunk ending {to_time}, stopping pagination")
                 break
 
             all_chunks.append(chunk)
             remaining -= len(chunk)
-            to_time = from_time
 
             logger.info(f"  Got {len(chunk)} candles, {remaining} remaining")
 
-            # If we got fewer candles than expected, we've reached the start of available data
-            if len(chunk) < 4000:
+            if remaining <= 0:
+                break
+
+            # Use the oldest candle's timestamp as the next 'to' boundary
+            oldest_time = chunk.index.min()
+            to_time = oldest_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            # If we got significantly fewer than requested, we've hit the start of available data
+            if len(chunk) < chunk_size * 0.8:
+                logger.info(f"  Received fewer candles than requested, likely reached start of available data")
                 break
 
         if not all_chunks:

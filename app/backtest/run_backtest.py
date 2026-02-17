@@ -82,6 +82,16 @@ def run_single_backtest(instrument: str,
         use_trailing_stop=config.get("use_trailing_stop", True),
         trailing_stop_atr_multiplier=config.get("trailing_stop_atr_multiplier", 2.0),
         max_hold_candles=config.get("max_hold_candles", 20),
+        # Regime detection
+        use_regime_filter=config.get("use_regime_filter", True),
+        adx_period=config.get("adx_period", 14),
+        adx_trending_threshold=config.get("adx_trending_threshold", 25.0),
+        adx_ranging_threshold=config.get("adx_ranging_threshold", 20.0),
+        atr_volatility_multiplier=config.get("atr_volatility_multiplier", 1.5),
+        atr_volatility_ma_length=config.get("atr_volatility_ma_length", 50),
+        # Multi-timeframe confirmation
+        use_mtf_confirmation=config.get("use_mtf_confirmation", True),
+        mtf_ema_period=config.get("mtf_ema_period", 50),
     )
 
     results = engine.run(data, instrument)

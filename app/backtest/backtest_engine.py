@@ -7,7 +7,8 @@ from typing import List, Dict
 from datetime import datetime
 from utils.indicators import (
     calculate_rsi, calculate_rsi_series, calculate_ema,
-    calculate_atr, calculate_macd, detect_rsi_divergence,
+    calculate_atr, calculate_atr_series, calculate_macd,
+    detect_rsi_divergence, calculate_adx, detect_regime,
 )
 from utils.risk_management import calculate_trade_levels
 
@@ -169,6 +170,16 @@ class BacktestEngine:
                  trailing_stop_atr_multiplier: float = 2.0,
                  # Time-based exit
                  max_hold_candles: int = 20,
+                 # Regime detection
+                 use_regime_filter: bool = True,
+                 adx_period: int = 14,
+                 adx_trending_threshold: float = 25.0,
+                 adx_ranging_threshold: float = 20.0,
+                 atr_volatility_multiplier: float = 1.5,
+                 atr_volatility_ma_length: int = 50,
+                 # Multi-timeframe confirmation
+                 use_mtf_confirmation: bool = True,
+                 mtf_ema_period: int = 50,
                  # Legacy compatibility
                  ma_period: int = 200,
                  ):
@@ -196,6 +207,18 @@ class BacktestEngine:
         self.trailing_stop_atr_multiplier = trailing_stop_atr_multiplier
         self.max_hold_candles = max_hold_candles
 
+        # Regime detection
+        self.use_regime_filter = use_regime_filter
+        self.adx_period = adx_period
+        self.adx_trending_threshold = adx_trending_threshold
+        self.adx_ranging_threshold = adx_ranging_threshold
+        self.atr_volatility_multiplier = atr_volatility_multiplier
+        self.atr_volatility_ma_length = atr_volatility_ma_length
+
+        # Multi-timeframe confirmation
+        self.use_mtf_confirmation = use_mtf_confirmation
+        self.mtf_ema_period = mtf_ema_period
+
         self.trades: List[Trade] = []
         self.open_trades: List[Trade] = []
 
@@ -211,7 +234,9 @@ class BacktestEngine:
             f"ATR({self.atr_period}) SL×{self.atr_sl_multiplier} | "
             f"Trailing={'ON' if self.use_trailing_stop else 'OFF'} | "
             f"MaxHold={self.max_hold_candles} | "
-            f"Divergence={'ON' if self.use_divergence else 'OFF'}"
+            f"Divergence={'ON' if self.use_divergence else 'OFF'} | "
+            f"Regime={'ON' if self.use_regime_filter else 'OFF'} ADX({self.adx_period}) | "
+            f"MTF={'ON' if self.use_mtf_confirmation else 'OFF'}"
         )
 
         # Reset state
@@ -224,7 +249,8 @@ class BacktestEngine:
         # Minimum bars needed before we can generate signals
         min_bars = max(self.rsi_period + 1, self.ema_period + 1,
                        self.macd_slow + self.macd_signal + 1,
-                       self.atr_period + 1)
+                       self.atr_period + 1,
+                       2 * self.adx_period + 1 if self.use_regime_filter else 0)
 
         for i in range(min_bars, len(data)):
             current_time = data.index[i]
@@ -249,6 +275,26 @@ class BacktestEngine:
                 divergence = detect_rsi_divergence(
                     history, rsi_series, lookback=self.divergence_lookback,
                 )
+
+            # Regime detection
+            regime = "neutral"
+            if self.use_regime_filter:
+                adx_data = calculate_adx(history, length=self.adx_period)
+                atr_series = calculate_atr_series(history, length=self.atr_period)
+                if adx_data is not None and len(atr_series.dropna()) > 0:
+                    regime = detect_regime(
+                        adx_value=adx_data["adx"],
+                        atr_series=atr_series,
+                        adx_trending_threshold=self.adx_trending_threshold,
+                        adx_ranging_threshold=self.adx_ranging_threshold,
+                        atr_volatility_multiplier=self.atr_volatility_multiplier,
+                        atr_ma_length=self.atr_volatility_ma_length,
+                    )
+
+            # Multi-timeframe confirmation
+            daily_trend = "neutral"
+            if self.use_mtf_confirmation:
+                daily_trend = self._get_daily_trend(data, i)
 
             # Update trailing stops and check exits for open trades
             for trade in self.open_trades[:]:
@@ -279,6 +325,8 @@ class BacktestEngine:
                 ema=ema,
                 macd_data=macd_data,
                 divergence=divergence,
+                regime=regime,
+                daily_trend=daily_trend,
             )
 
             if signal and signal != "WAIT":
@@ -310,16 +358,25 @@ class BacktestEngine:
 
     def _generate_signal(self, rsi: float, price: float, instrument: str,
                          ema: float = None, macd_data: dict = None,
-                         divergence: str = "none") -> str:
+                         divergence: str = "none",
+                         regime: str = "neutral",
+                         daily_trend: str = "neutral") -> str:
         """
         Generate trading signal using multi-indicator confluence.
 
-        Two signal modes:
+        Signal modes:
         1. Trend pullback: RSI pulls back in a trending market (EMA filter)
-           - BUY: price > EMA (uptrend) + RSI dips below 40 (pullback) + MACD confirms
-           - SELL: price < EMA (downtrend) + RSI rises above 60 (pullback) + MACD confirms
-        2. Divergence: RSI divergence detected (works regardless of trend)
+        2. RSI extreme: without trend filter (fallback)
+        3. Divergence: RSI divergence detected
+
+        Filters:
+        - Regime: high_volatility blocks all; ranging blocks Mode 1
+        - MTF: daily trend must not oppose the signal direction
         """
+        # High volatility: skip all trading
+        if regime == "high_volatility":
+            return "WAIT"
+
         divergence_buy = divergence == "bullish"
         divergence_sell = divergence == "bearish"
 
@@ -333,40 +390,72 @@ class BacktestEngine:
         macd_ok_buy = True
         macd_ok_sell = True
         if self.use_macd_filter and macd_data is not None:
-            # Buy: histogram positive or turning upward
             macd_ok_buy = (macd_data["histogram"] > 0 or
                            macd_data["histogram"] > macd_data["prev_histogram"])
-            # Sell: histogram negative or turning downward
             macd_ok_sell = (macd_data["histogram"] < 0 or
                             macd_data["histogram"] < macd_data["prev_histogram"])
 
-        # Mode 1: Trend pullback signals
-        # In an uptrend, buy when RSI pulls back (< 45) — not extreme oversold
-        # In a downtrend, sell when RSI bounces (> 55) — not extreme overbought
         PULLBACK_BUY_THRESHOLD = 45
         PULLBACK_SELL_THRESHOLD = 55
 
-        if self.use_trend_filter and ema is not None:
+        # Mode 1: Trend pullback — only in trending or neutral regimes
+        if self.use_trend_filter and ema is not None and regime != "ranging":
             if in_uptrend and rsi < PULLBACK_BUY_THRESHOLD and macd_ok_buy:
-                return "BUY"
+                if daily_trend != "bearish":
+                    return "BUY"
             if in_downtrend and rsi > PULLBACK_SELL_THRESHOLD and macd_ok_sell:
-                return "SELL"
+                if daily_trend != "bullish":
+                    return "SELL"
 
         # Mode 2: RSI extreme without trend filter
         if not self.use_trend_filter:
             if rsi < self.rsi_oversold and macd_ok_buy:
-                return "BUY"
+                if daily_trend != "bearish":
+                    return "BUY"
             if rsi > self.rsi_overbought and macd_ok_sell:
-                return "SELL"
+                if daily_trend != "bullish":
+                    return "SELL"
 
-        # Mode 3: RSI divergence (works with or without trend filter)
+        # Mode 3: RSI divergence (works in all non-volatile regimes)
         if self.use_divergence:
             if divergence_buy and macd_ok_buy:
-                return "BUY"
+                if daily_trend != "bearish":
+                    return "BUY"
             if divergence_sell and macd_ok_sell:
-                return "SELL"
+                if daily_trend != "bullish":
+                    return "SELL"
 
         return "WAIT"
+
+    def _get_daily_trend(self, data: pd.DataFrame, current_index: int) -> str:
+        """
+        Resample H4 data to Daily and check EMA trend direction.
+        Returns "bullish", "bearish", or "neutral".
+        """
+        history = data.iloc[:current_index + 1]
+
+        # Resample to daily OHLC
+        daily = history.resample('D').agg({
+            'Open': 'first',
+            'High': 'max',
+            'Low': 'min',
+            'Close': 'last',
+        }).dropna()
+
+        if len(daily) < self.mtf_ema_period:
+            return "neutral"
+
+        daily_ema = calculate_ema(daily, length=self.mtf_ema_period)
+        if daily_ema is None:
+            return "neutral"
+
+        current_daily_close = daily['Close'].iloc[-1]
+
+        if current_daily_close > daily_ema:
+            return "bullish"
+        elif current_daily_close < daily_ema:
+            return "bearish"
+        return "neutral"
 
     def _enter_trade(self, instrument: str, trade_type: str, entry_price: float,
                      entry_time: datetime, atr: float = None,

@@ -40,26 +40,38 @@ class OandaClient:
 
         return self._parse_candles(r.response, instrument, granularity)
 
-    def get_history_range(self, instrument: str, from_time: str, to_time: str = None,
-                          granularity: str = "H4"):
+    def get_history_range(self, instrument: str, from_time: str = None, to_time: str = None,
+                          granularity: str = "H4", count: int = 5000):
         """
-        Fetches historical data for a date range. Uses 'from'/'to' params instead of 'count'.
+        Fetches historical data using date range and/or count params.
+        OANDA allows: from+count, from+to, or to+count (but not all three).
 
         :param instrument: The currency pair (e.g., "EUR_USD").
         :param from_time: RFC3339 start time (e.g., "2023-01-01T00:00:00Z").
         :param to_time: RFC3339 end time. If None, fetches up to now.
         :param granularity: The timeframe.
+        :param count: Number of candles (used with from or to, not both).
         :return: A pandas DataFrame or None.
         """
         params = {
-            "from": from_time,
             "granularity": granularity,
             "price": "M",
-            "count": 5000,
         }
-        if to_time:
+        if from_time and to_time:
+            # Date range mode: from + to (no count)
+            params["from"] = from_time
             params["to"] = to_time
-            del params["count"]
+        elif from_time:
+            # Forward from a point: from + count
+            params["from"] = from_time
+            params["count"] = count
+        elif to_time:
+            # Backward from a point: to + count
+            params["to"] = to_time
+            params["count"] = count
+        else:
+            # Fallback: just count (most recent candles)
+            params["count"] = count
 
         r = instruments.InstrumentsCandles(instrument=instrument, params=params)
 
