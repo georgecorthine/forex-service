@@ -3,6 +3,7 @@
 Backtest Runner - Execute backtests and analyze results
 """
 import sys
+import os
 import logging
 import json
 from datetime import datetime
@@ -24,7 +25,8 @@ def run_single_backtest(instrument: str,
                        risk_percentage: float = 1.0,
                        reward_ratio: float = 2.0,
                        granularity: str = "D",
-                       count: int = None):
+                       count: int = None,
+                       years: float = 1.0):
     """
     Run backtest for a single instrument.
     """
@@ -38,16 +40,16 @@ def run_single_backtest(instrument: str,
     if granularity == "D" and "granularity" in config:
         granularity = config.get("granularity", "D")
 
-    # Auto-calculate count for 1 year based on granularity
+    # Auto-calculate count based on granularity and years
     if count is None:
-        if granularity == "H4":
-            count = 2190  # ~6 candles/day * 365 days
-        elif granularity == "H1":
-            count = 8760  # ~24 candles/day * 365 days
-        elif granularity == "D":
-            count = 365  # 1 year of daily candles
-        else:
-            count = 365  # Default to 1 year
+        candles_per_year = {
+            "H1": 8760,   # ~24 candles/day * 365
+            "H4": 2190,   # ~6 candles/day * 365
+            "D": 365,
+            "W": 52,
+        }
+        base = candles_per_year.get(granularity, 365)
+        count = int(base * years)
 
     # Fetch data
     logger.info("Step 1: Fetching historical data...")
@@ -97,7 +99,8 @@ def run_multi_instrument_backtest(instruments: list = None,
                                   risk_percentage: float = 1.0,
                                   reward_ratio: float = 2.0,
                                   granularity: str = "D",
-                                  count: int = None):
+                                  count: int = None,
+                                  years: float = 1.0):
     """
     Run backtest for multiple instruments and aggregate results.
     """
@@ -117,7 +120,8 @@ def run_multi_instrument_backtest(instruments: list = None,
             risk_percentage=risk_percentage,
             reward_ratio=reward_ratio,
             granularity=granularity,
-            count=count
+            count=count,
+            years=years,
         )
 
         if results:
@@ -144,9 +148,14 @@ def run_multi_instrument_backtest(instruments: list = None,
 
 
 def save_results(results: dict, filename: str = None):
-    """Save backtest results to JSON file."""
+    """Save backtest results to backtest/test_results/ directory."""
+    results_dir = os.path.join(os.path.dirname(__file__), "test_results")
+    os.makedirs(results_dir, exist_ok=True)
+
     if filename is None:
         filename = f"backtest_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+
+    filepath = os.path.join(results_dir, filename)
 
     # Convert results to JSON-serializable format
     json_results = {}
@@ -158,11 +167,11 @@ def save_results(results: dict, filename: str = None):
             del json_data['trades']
         json_results[instrument] = json_data
 
-    with open(filename, 'w') as f:
+    with open(filepath, 'w') as f:
         json.dump(json_results, f, indent=2)
 
-    logger.info(f"Results saved to {filename}")
-    return filename
+    logger.info(f"Results saved to {filepath}")
+    return filepath
 
 
 if __name__ == "__main__":
@@ -171,7 +180,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run forex backtest')
     parser.add_argument('instrument', nargs='?', help='Specific instrument to test (e.g., USD_CHF)')
     parser.add_argument('--granularity', '-g', help='Timeframe: D, H4, H1, etc. (overrides config)')
-    parser.add_argument('--count', '-c', type=int, help='Number of candles to fetch')
+    parser.add_argument('--count', '-c', type=int, help='Number of candles to fetch (overrides --years)')
+    parser.add_argument('--years', '-y', type=float, default=1.0, help='Years of data to backtest (default: 1.0)')
 
     args = parser.parse_args()
 
@@ -181,7 +191,8 @@ if __name__ == "__main__":
         single_result = run_single_backtest(
             instrument,
             granularity=args.granularity if args.granularity else "D",
-            count=args.count
+            count=args.count,
+            years=args.years,
         )
         # Wrap single result in a dict for save_results
         results = {instrument: single_result} if single_result else None
@@ -189,7 +200,8 @@ if __name__ == "__main__":
         # Run for all configured instruments
         results = run_multi_instrument_backtest(
             granularity=args.granularity if args.granularity else "D",
-            count=args.count
+            count=args.count,
+            years=args.years,
         )
 
     if results:

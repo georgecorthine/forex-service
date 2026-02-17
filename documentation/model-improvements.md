@@ -121,15 +121,69 @@ New per-pair parameters added:
 
 ## Remaining Work / Next Steps
 
-1. **Parameter optimization**: Test different EMA periods (20, 50, 100), pullback thresholds (40/60 vs 45/55), ATR multipliers
-2. **Re-evaluate removed pairs**: EUR_USD, USD_JPY, AUD_USD, EUR_JPY may perform better with the enhanced strategy on H4
-3. **Longer backtest period**: Run with 3-5 years of data to validate across different market conditions (OANDA API may need pagination for >5000 candles)
-4. **Fix engine.py f-string bug**: The logger.info line uses conditional f-string formatting (`{ema:.5f if ema else 'N/A'}`) which will crash at runtime — needs the same fix applied to backtest_engine.py (extract to variable first)
+1. ~~**Parameter optimization**~~: ✅ Done (Feb 17) — Created `app/backtest/optimize.py` grid search script
+2. ~~**Re-evaluate removed pairs**~~: ✅ Done (Feb 17) — EUR_USD, USD_JPY, AUD_USD, EUR_JPY re-added to config with H4 parameters
+3. ~~**Longer backtest period**~~: ✅ Done (Feb 17) — Paginated data fetching supports >5000 candles, `--years` CLI argument added
+4. ~~**Fix engine.py f-string bug**~~: ✅ Done (Feb 17) — Extracted to variables before logger call
 5. **Demo trading**: Start with USD_CHF at 0.5% risk, monitor for 1-2 weeks, compare live vs backtest
 6. **Consider higher risk %**: At 1.5-2% risk per trade, returns scale proportionally while drawdown stays manageable
-7. **Sharpe ratio**: Will improve with more trades and compounding; also consider annualizing the calculation
+7. ~~**Sharpe ratio**~~: ✅ Done (Feb 17) — Annualized using `per_trade_sharpe * sqrt(trades_per_year)`
+
+---
+
+## Follow-Up Changes (Feb 17, 2026)
+
+### 1. Bug Fixes (`app/utils/engine.py`)
+
+- **F-string crash fix**: Extracted `ema_str`, `atr_str`, `macd_str` variables before the logger.info call (matching the pattern already used in `backtest_engine.py`)
+- **Hardcoded granularity fix**: `get_history()` was called with `"D"` instead of using the pair's config granularity. Now uses `config.get("granularity", "D")` so pairs configured for H4 actually fetch H4 data
+
+### 2. Re-Added Currency Pairs (`app/config/config.py`)
+
+Re-added 4 previously removed pairs for re-evaluation with the enhanced multi-indicator strategy on H4:
+- EUR_USD, USD_JPY, AUD_USD, EUR_JPY
+- All use identical parameters to USD_CHF/GBP_USD (EMA 50, MACD 12/26/9, ATR×2.0, trailing stops, 30-candle time exit)
+- These were removed due to poor RSI-only daily performance but may perform better with the new system
+
+### 3. Paginated Data Fetching (`app/utils/oanda_client.py`, `app/backtest/data_fetcher.py`)
+
+OANDA API caps at 5000 candles per request. For 3-5 years of H4 data (~8000-13000 candles), pagination is needed.
+
+- **`oanda_client.py`**: Added `get_history_range(from_time, to_time, granularity)` method for date-range queries. Extracted `_parse_candles()` helper to reduce duplication.
+- **`data_fetcher.py`**: `fetch_data()` now auto-paginates when count > 5000. Added `_fetch_paginated()` which works backwards from now in 5000-candle chunks, concatenates and deduplicates.
+
+### 4. Multi-Year Backtest Support (`app/backtest/run_backtest.py`)
+
+- Added `--years` / `-y` CLI argument (default 1.0) that auto-calculates candle count based on granularity
+- Usage: `python -m backtest.run_backtest --years 3` for 3-year backtest
+- Count is calculated as `candles_per_year[granularity] * years`
+- `--count` still overrides `--years` for manual control
+
+### 5. Annualized Sharpe Ratio (`app/backtest/backtest_engine.py`)
+
+Previous Sharpe was per-trade (not annualized), making it artificially low with few trades. Now:
+- Computes data span from actual date range
+- Calculates `trades_per_year = total_trades / data_span_years`
+- `annualized_sharpe = per_trade_sharpe * sqrt(trades_per_year)`
+
+### 6. Parameter Optimization Script (`app/backtest/optimize.py`) — NEW
+
+Grid search script that tests parameter combinations per instrument:
+- **EMA periods**: 20, 50, 100
+- **Pullback thresholds**: (40/60), (45/55)
+- **ATR SL multipliers**: 1.5, 2.0, 2.5
+- 18 combinations per instrument, ranked by composite score:
+  - `win_rate * 0.3 + profit_factor * 0.3 + sharpe * 0.2 + (1 - max_dd/100) * 0.2`
+- Usage: `python -m backtest.optimize USD_CHF --years 1.5 --top 5`
+
+### 7. Results Output Directory (`app/backtest/run_backtest.py`, `app/backtest/results_analyzer.py`)
+
+- Backtest JSON results and CSV exports now save to `app/backtest/test_results/` instead of the working directory
+- Directory is auto-created on first use
 
 ## Files Modified
+
+### Session 1 (Feb 16)
 
 | File | Change |
 |------|--------|
@@ -141,3 +195,16 @@ New per-pair parameters added:
 | `app/backtest/run_backtest.py` | Passes all new config parameters to engine |
 | `app/backtest/results_analyzer.py` | Added exit reason reporting |
 | `app/api/routes.py` | Trade endpoint uses ATR for dynamic stops |
+
+### Session 2 (Feb 17)
+
+| File | Change |
+|------|--------|
+| `app/utils/engine.py` | Fixed f-string bug, fixed hardcoded "D" granularity |
+| `app/config/config.py` | Re-added EUR_USD, USD_JPY, AUD_USD, EUR_JPY with H4 params |
+| `app/utils/oanda_client.py` | Added `get_history_range()`, extracted `_parse_candles()` |
+| `app/backtest/data_fetcher.py` | Added paginated fetching for >5000 candles |
+| `app/backtest/run_backtest.py` | Added `--years` argument, results save to `test_results/` |
+| `app/backtest/backtest_engine.py` | Annualized Sharpe ratio calculation |
+| `app/backtest/results_analyzer.py` | CSV export saves to `test_results/` |
+| `app/backtest/optimize.py` | **NEW** — Parameter grid search optimization script |

@@ -84,9 +84,86 @@ TRADING_PAIRS = {
         "max_hold_candles": 30,
         "news_query": "GBP USD forex news"
     },
-    # Removed pairs (poor performance on 1-year backtest):
-    # EUR_JPY: -1.03% return, 29.4% win rate, 0.83 profit factor (LOSING)
-    # EUR_USD: +0.47% return, 35.7% win rate, 1.11 profit factor (barely profitable)
-    # USD_JPY: +0.47% return, 36.4% win rate, 1.14 profit factor (poor)
-    # AUD_USD: +1.77% return, 34.7% win rate, 1.06 profit factor (poor)
+    # Re-added pairs for re-evaluation with enhanced H4 strategy
+    # Previously removed due to poor RSI-only performance on daily timeframe
+    "EUR_USD": {
+        "granularity": os.getenv("EUR_USD_GRANULARITY", "H4"),
+        "rsi_length": 14,
+        "overbought": 70,
+        "oversold": 30,
+        "ema_period": 50,
+        "use_trend_filter": True,
+        "use_macd_filter": True,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "macd_signal": 9,
+        "atr_period": 14,
+        "atr_sl_multiplier": 2.0,
+        "use_divergence": True,
+        "divergence_lookback": 20,
+        "use_trailing_stop": True,
+        "trailing_stop_atr_multiplier": 2.0,
+        "max_hold_candles": 30,
+        "news_query": "EUR USD forex news"
+    },
+    "USD_JPY": {
+        "granularity": os.getenv("USD_JPY_GRANULARITY", "H4"),
+        "rsi_length": 14,
+        "overbought": 70,
+        "oversold": 30,
+        "ema_period": 50,
+        "use_trend_filter": True,
+        "use_macd_filter": True,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "macd_signal": 9,
+        "atr_period": 14,
+        "atr_sl_multiplier": 2.0,
+        "use_divergence": True,
+        "divergence_lookback": 20,
+        "use_trailing_stop": True,
+        "trailing_stop_atr_multiplier": 2.0,
+        "max_hold_candles": 30,
+        "news_query": "USD JPY forex news"
+    },
+    "AUD_USD": {
+        "granularity": os.getenv("AUD_USD_GRANULARITY", "H4"),
+        "rsi_length": 14,
+        "overbought": 70,
+        "oversold": 30,
+        "ema_period": 50,
+        "use_trend_filter": True,
+        "use_macd_filter": True,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "macd_signal": 9,
+        "atr_period": 14,
+        "atr_sl_multiplier": 2.0,
+        "use_divergence": True,
+        "divergence_lookback": 20,
+        "use_trailing_stop": True,
+        "trailing_stop_atr_multiplier": 2.0,
+        "max_hold_candles": 30,
+        "news_query": "AUD USD forex news"
+    },
+    "EUR_JPY": {
+        "granularity": os.getenv("EUR_JPY_GRANULARITY", "H4"),
+        "rsi_length": 14,
+        "overbought": 70,
+        "oversold": 30,
+        "ema_period": 50,
+        "use_trend_filter": True,
+        "use_macd_filter": True,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "macd_signal": 9,
+        "atr_period": 14,
+        "atr_sl_multiplier": 2.0,
+        "use_divergence": True,
+        "divergence_lookback": 20,
+        "use_trailing_stop": True,
+        "trailing_stop_atr_multiplier": 2.0,
+        "max_hold_candles": 30,
+        "news_query": "EUR JPY forex news"
+    },
 }

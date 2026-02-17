@@ -301,7 +301,9 @@ class BacktestEngine:
             for trade in self.open_trades:
                 trade.close(last_price, last_time, reason="CLOSE")
 
-        results = self._calculate_statistics()
+        # Calculate data span for annualized metrics
+        data_span_days = (data.index[-1] - data.index[0]).total_seconds() / 86400
+        results = self._calculate_statistics(data_span_days=data_span_days)
         logger.info(f"Backtest complete: {len(self.trades)} trades, Final balance: ${self.balance:.2f}")
 
         return results
@@ -406,7 +408,7 @@ class BacktestEngine:
             logger.error(f"Failed to enter trade: {e}")
             return None
 
-    def _calculate_statistics(self) -> Dict:
+    def _calculate_statistics(self, data_span_days: float = 365) -> Dict:
         """Calculate backtest statistics."""
         if not self.trades:
             return {
@@ -458,11 +460,16 @@ class BacktestEngine:
             if drawdown > max_drawdown:
                 max_drawdown = drawdown
 
-        # Sharpe ratio approximation
+        # Annualized Sharpe ratio
         returns = [t.profit_loss_pct for t in self.trades]
         avg_return = sum(returns) / len(returns) if returns else 0
         std_dev = (sum((r - avg_return) ** 2 for r in returns) / len(returns)) ** 0.5 if returns else 0
-        sharpe_ratio = (avg_return / std_dev) if std_dev > 0 else 0
+        per_trade_sharpe = (avg_return / std_dev) if std_dev > 0 else 0
+
+        # Annualize: multiply by sqrt(trades_per_year)
+        data_span_years = max(data_span_days / 365.25, 0.1)
+        trades_per_year = len(self.trades) / data_span_years if data_span_years > 0 else len(self.trades)
+        sharpe_ratio = per_trade_sharpe * (trades_per_year ** 0.5) if trades_per_year > 0 else 0
 
         # Exit reason breakdown
         exit_reasons = {}

@@ -135,18 +135,23 @@ class BacktestAnalyzer:
             return "NOT READY - REQUIRES MAJOR CHANGES"
 
     def export_trades_to_csv(self, filename: str = "backtest_trades.csv"):
-        """Export trade history to CSV for detailed analysis."""
+        """Export trade history to CSV in backtest/test_results/ directory."""
+        import os
         import pandas as pd
 
         if 'trades' not in self.results or not self.results['trades']:
             logger.warning("No trades to export")
             return None
 
-        df = pd.DataFrame(self.results['trades'])
-        df.to_csv(filename, index=False)
-        logger.info(f"Exported {len(df)} trades to {filename}")
+        results_dir = os.path.join(os.path.dirname(__file__), "test_results")
+        os.makedirs(results_dir, exist_ok=True)
+        filepath = os.path.join(results_dir, filename)
 
-        return filename
+        df = pd.DataFrame(self.results['trades'])
+        df.to_csv(filepath, index=False)
+        logger.info(f"Exported {len(df)} trades to {filepath}")
+
+        return filepath
 
     def calculate_monthly_returns(self):
         """Calculate monthly return breakdown."""

@@ -84,7 +84,7 @@ async def analyze_instrument(instrument:str, config:dict, loop):
     history = None
     try:
         history = await loop.run_in_executor(
-            None, oanda_client.get_history, instrument, 250, "D"
+            None, oanda_client.get_history, instrument, 250, config.get("granularity", "D")
         )
 
         if history is not None and not history.empty:
@@ -173,10 +173,14 @@ async def analyze_instrument(instrument:str, config:dict, loop):
             elif tech_signal == "SELL" and avg_sentiment < NEGATIVE_SENTIMENT_THRESHOLD:
                 final_sentiment = "SELL (Confirmed by News)"
 
+            ema_str = f"{ema:.5f}" if ema else "N/A"
+            atr_str = f"{atr:.5f}" if atr else "N/A"
+            macd_str = f"{macd_data['histogram']:.6f}" if macd_data else "N/A"
+
             logger.info(
                 f"Analysis [{instrument}]: Price={current_price:.5f} | RSI={rsi:.2f} ({base_sentiment}) | "
-                f"EMA={ema:.5f if ema else 'N/A'} | ATR={atr:.5f if atr else 'N/A'} | "
-                f"MACD hist={macd_data['histogram']:.6f if macd_data else 'N/A'} | "
+                f"EMA={ema_str} | ATR={atr_str} | "
+                f"MACD hist={macd_str} | "
                 f"Divergence={divergence} | News={avg_sentiment:.3f} | Signal: {final_sentiment}"
             )
 
