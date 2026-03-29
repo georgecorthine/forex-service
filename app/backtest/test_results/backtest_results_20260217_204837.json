@@ -1,0 +1,68 @@
+{
+  "GBP_USD": {
+    "initial_balance": 10000.0,
+    "final_balance": 9721.44204950709,
+    "total_return": -278.5579504929101,
+    "total_return_pct": -2.785579504929101,
+    "total_trades": 68,
+    "winning_trades": 26,
+    "losing_trades": 42,
+    "win_rate": 38.23529411764706,
+    "avg_win": 0.7834683455051272,
+    "avg_loss": -0.5478980906208121,
+    "profit_factor": 0.8852088046785819,
+    "max_drawdown": 6.806987460616856,
+    "sharpe_ratio": -0.18361501810432293,
+    "exit_reasons": {
+      "SL": 39,
+      "TRAILING": 10,
+      "TIME": 8,
+      "TP": 11
+    },
+    "num_trades": 68
+  },
+  "USD_JPY": {
+    "initial_balance": 10000.0,
+    "final_balance": 10116.13022392622,
+    "total_return": 116.13022392622042,
+    "total_return_pct": 1.1613022392622043,
+    "total_trades": 52,
+    "winning_trades": 25,
+    "losing_trades": 27,
+    "win_rate": 48.07692307692308,
+    "avg_win": 0.6650284167708748,
+    "avg_loss": -0.5672996160799654,
+    "profit_factor": 1.085435341593511,
+    "max_drawdown": 3.6408225855586167,
+    "sharpe_ratio": 0.09922783587085605,
+    "exit_reasons": {
+      "SL": 24,
+      "TIME": 5,
+      "TP": 8,
+      "TRAILING": 15
+    },
+    "num_trades": 52
+  },
+  "EUR_JPY": {
+    "initial_balance": 10000.0,
+    "final_balance": 10323.633069627078,
+    "total_return": 323.63306962707793,
+    "total_return_pct": 3.236330696270779,
+    "total_trades": 47,
+    "winning_trades": 23,
+    "losing_trades": 24,
+    "win_rate": 48.93617021276596,
+    "avg_win": 0.8633528815501087,
+    "avg_loss": -0.6866280188011148,
+    "profit_factor": 1.2049899249137819,
+    "max_drawdown": 3.8750551599563163,
+    "sharpe_ratio": 0.22942060655735427,
+    "exit_reasons": {
+      "TRAILING": 8,
+      "TIME": 8,
+      "TP": 10,
+      "SL": 21
+    },
+    "num_trades": 47
+  }
+}
